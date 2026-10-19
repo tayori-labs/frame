@@ -104,6 +104,7 @@ main {
   padding: 40px var(--pad) 96px;
   max-width: 980px;
   width: 100%;
+  margin-inline: auto;
 }
 h1 {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
@@ -466,7 +467,7 @@ a.inline { color: var(--accent); }
 .brand b { display: block; font-size: 1.05rem; color: var(--text); }
 .brand small { display: block; color: var(--muted); font-weight: 400; font-size: 0.75rem; }
 .hero { margin: 0 0 28px; }
-.hero-media { position: relative; width: calc(100vw - var(--side)); margin: -40px 0 0 calc(-1 * var(--pad)); aspect-ratio: 2112 / 744; min-height: 220px; max-height: 62vh; }
+.hero-media { position: relative; width: calc(100vw - var(--side)); margin: -40px 0 0 calc(50% - (100vw - var(--side)) / 2); aspect-ratio: 2112 / 744; min-height: 220px; max-height: 62vh; }
 .hero-media img { object-fit: cover; }
 .hero-media::after { content: ""; position: absolute; inset: auto 0 0; height: 55%; background: linear-gradient(180deg, rgba(13, 14, 17, 0), var(--bg)); pointer-events: none; }
 .hero-body { margin-top: 4px; }
