@@ -4,7 +4,12 @@ export const FIELDS = {
   type: DATA.categories.map((c) => c.id),
   duration: ["5", "10", "15", "30", "60"],
   ratio: ["9:16", "16:9", "1:1", "4:5"],
-  audio: ["SFX only, music added in edit", "Dialogue / talking to camera", "Voice-over + SFX", "No audio"],
+  audio: [
+    "SFX only, music added in edit",
+    "Dialogue / talking to camera",
+    "Voice-over + SFX",
+    "No audio",
+  ],
   budget: ["Best quality", "Balanced", "Lowest cost"],
   camera: ["", ...DATA.vocab.camera.map(([t]) => t)],
   lens: ["", ...DATA.vocab.lens.map(([t]) => t)],
@@ -12,10 +17,16 @@ export const FIELDS = {
   lighting: ["", ...DATA.vocab.lighting.map(([t]) => t)],
 };
 const TEXT_LIMITS = { idea: 2000, assets: 1500, notes: 1000 };
-export type Form = Record<keyof typeof FIELDS | keyof typeof TEXT_LIMITS, string>;
+export type Form = Record<
+  keyof typeof FIELDS | keyof typeof TEXT_LIMITS,
+  string
+>;
 
 export const DEFAULT_FORM = Object.fromEntries([
-  ...Object.entries(FIELDS).map(([k, v]) => [k, k === "duration" ? "15" : v[0]]),
+  ...Object.entries(FIELDS).map(([k, v]) => [
+    k,
+    k === "duration" ? "15" : v[0],
+  ]),
   ...Object.keys(TEXT_LIMITS).map((k) => [k, ""]),
 ]) as Form;
 
@@ -23,25 +34,73 @@ export const DEFAULT_FORM = Object.fromEntries([
 export function validateForm(input: unknown): Form {
   const src = (input ?? {}) as Record<string, unknown>;
   const f = {} as Form;
-  for (const [k, allowed] of Object.entries(FIELDS) as [keyof typeof FIELDS, string[]][]) {
+  for (const [k, allowed] of Object.entries(FIELDS) as [
+    keyof typeof FIELDS,
+    string[],
+  ][]) {
     const v = String(src[k] ?? "");
     if (!allowed.includes(v)) throw new Error(`Invalid value for ${k}`);
     f[k] = v;
   }
-  for (const [k, max] of Object.entries(TEXT_LIMITS) as [keyof typeof TEXT_LIMITS, number][]) {
+  for (const [k, max] of Object.entries(TEXT_LIMITS) as [
+    keyof typeof TEXT_LIMITS,
+    number,
+  ][]) {
     const v = String(src[k] ?? "").trim();
-    if (v.length > max) throw new Error(`${k} is too long (max ${max} characters)`);
+    if (v.length > max)
+      throw new Error(`${k} is too long (max ${max} characters)`);
     f[k] = v;
   }
   if (!f.idea) throw new Error("Describe your idea first");
   return f;
 }
 
+const words = (s: string) =>
+  s
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 3);
+
+// Which guide step a generated plan step came from. guideStep wins; otherwise the closest title.
+export function guideTarget(
+  type: string,
+  step: { title: string; guideStep?: number },
+) {
+  const c = DATA.categories.find((x) => x.id === type);
+  if (!c) return { href: "/workflows", label: "Open the guide" };
+  const n = Number(step.guideStep);
+  let index = Number.isInteger(n) && n >= 1 && n <= c.steps.length ? n - 1 : -1;
+  if (index < 0) {
+    const tw = words(step.title);
+    let best = -1;
+    let score = 0;
+    c.steps.forEach((s, i) => {
+      const shared = words(s.title).filter((w) => tw.includes(w)).length;
+      if (shared > score) {
+        score = shared;
+        best = i;
+      }
+    });
+    index = best;
+  }
+  return {
+    href:
+      index >= 0
+        ? `/workflows/${c.id}#step-${index + 1}`
+        : `/workflows/${c.id}`,
+    label: index >= 0 ? c.steps[index].title : c.name,
+  };
+}
+
 export function buildBrief(f: Form) {
   const c = DATA.categories.find((x) => x.id === f.type)!;
   const m = DATA.models;
-  const list = (rows: string[][]) => rows.map(([n, w, cost]) => `- ${n}: ${w}${cost ? ` (${cost})` : ""}`).join("\n");
-  const tools = (xs: [string, string][]) => xs.map(([n, w]) => `${n} (${w})`).join("; ");
+  const list = (rows: string[][]) =>
+    rows
+      .map(([n, w, cost]) => `- ${n}: ${w}${cost ? ` (${cost})` : ""}`)
+      .join("\n");
+  const tools = (xs: [string, string][]) =>
+    xs.map(([n, w]) => `${n} (${w})`).join("; ");
   const steps = c.steps
     .map((s, i) =>
       [
@@ -80,6 +139,7 @@ ${DATA.templates.map(([l, t]) => `${l}:\n${t}`).join("\n\n")}
 
 HOW TO ANSWER
 - Follow the reference workflow in order, adapted to the idea. Merge or skip steps that do not apply; add a step only if the idea needs it.
+- Set guideStep to the 1-based STEP number in the reference workflow this step is adapted from. If you merge steps, use the earliest one.
 - Each step names one primary tool from the lists above and says in one sentence why.
 - Write every prompt in full, specific to the idea, ready to paste. No {placeholders}. Refer to uploads as <<<image_N>>> with a one-line description of what that image is.
 - Image prompts use the look formula (camera, lens, director / style, shot, subject, lighting, palette + mood). Use the character / prop sheet templates for anything that must stay consistent.

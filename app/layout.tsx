@@ -6,12 +6,20 @@ import KeyDialog from "@/components/KeyDialog";
 import { DATA } from "@/lib/data";
 
 export const metadata: Metadata = {
-  title: { default: "Frame - AI video generation guide", template: "%s - Frame" },
-  description: "Step-by-step AI video workflows, model picks and copy-ready prompts, plus an AI prompt builder.",
+  title: {
+    default: "Frame - AI video generation guide",
+    template: "%s - Frame",
+  },
+  description:
+    "Step-by-step AI video workflows, model picks and copy-ready prompts, plus an AI prompt builder.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const workflows = DATA.categories.map(({ id, name, steps }) => ({ id, name, steps: steps.map((s) => s.title) }));
+  const workflows = DATA.categories.map(({ id, name, steps }) => ({
+    id,
+    name,
+    steps: steps.map((s) => s.title),
+  }));
   return (
     <html lang="en">
       <body>
@@ -21,7 +29,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             {children}
             <footer className="site-footer">
               <span>&copy; 2026 Tayori Labs. All rights reserved.</span>
-              <a href="https://github.com/tayori-labs/frame" target="_blank" rel="noopener">GitHub</a>
+              <a
+                href="https://github.com/tayori-labs/frame"
+                target="_blank"
+                rel="noopener"
+              >
+                GitHub
+              </a>
             </footer>
           </main>
         </div>
