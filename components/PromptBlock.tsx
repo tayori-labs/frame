@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import CopyButton from "./CopyButton";
 import { authHeaders, openKeyDialog, useGeminiKey } from "@/lib/geminiKey";
 import { ASPECTS, type TryResult } from "@/lib/gemini";
@@ -17,6 +17,7 @@ type Props = { label: string; text: string; children?: ReactNode; tryMode?: TryM
 
 export default function PromptBlock({ label, text, children, tryMode }: Props) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const id = useId();
   return (
     <div className="prompt">
@@ -24,20 +25,40 @@ export default function PromptBlock({ label, text, children, tryMode }: Props) {
         <span>{label}</span>
         <span className="prompt-actions">
           {tryMode !== false && (
-            <button type="button" className="copy ghost" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
-              {open ? "Close" : "Try now"}
+            <button
+              type="button"
+              className="copy ghost"
+              aria-haspopup="dialog"
+              aria-expanded={open}
+              aria-controls={id}
+              onClick={() => {
+                setMounted(true);
+                setOpen(true);
+              }}
+            >
+              Try now
             </button>
           )}
           <CopyButton text={text} />
         </span>
       </div>
-      {open ? <TryPanel id={id} text={text} initialMode={tryMode || guessMode(text)} /> : <pre>{children ?? <Highlight text={text} />}</pre>}
+      <pre>{children ?? <Highlight text={text} />}</pre>
+      {mounted && <TrySheet id={id} label={label} text={text} initialMode={tryMode || guessMode(text)} open={open} onClose={() => setOpen(false)} />}
     </div>
   );
 }
 
-function TryPanel({ id, text, initialMode }: { id: string; text: string; initialMode: TryMode }) {
+type SheetProps = { id: string; label: string; text: string; initialMode: TryMode; open: boolean; onClose: () => void };
+
+// Stays mounted after the first open so the draft and results survive closing the sheet.
+function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
+  const ref = useRef<HTMLDialogElement>(null);
   const s = useGeminiKey();
+  useEffect(() => {
+    const d = ref.current;
+    if (open && !d?.open) d?.showModal();
+    if (!open && d?.open) d.close();
+  }, [open]);
   const [draft, setDraft] = useState(text);
   const [mode, setMode] = useState(initialMode);
   const [aspect, setAspect] = useState(() => guessAspect(text));
@@ -69,65 +90,88 @@ function TryPanel({ id, text, initialMode }: { id: string; text: string; initial
   }
 
   return (
-    <section className="try" id={id} aria-label={`Try ${mode} output`}>
-      <div className="try-bar">
-        <div className="seg" role="group" aria-label="Output type">
-          {(["text", "image"] as const).map((m) => (
-            <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}>
-              {m === "text" ? "Text" : "Image"}
-            </button>
-          ))}
+    <dialog
+      ref={ref}
+      id={id}
+      className="sheet"
+      aria-labelledby={`${id}-title`}
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+      onKeyDown={(e) => e.key === "Escape" && (e.preventDefault(), onClose())}
+    >
+      <div className="sheet-head">
+        <div>
+          <small>Try now</small>
+          <h2 id={`${id}-title`}>{label}</h2>
         </div>
-        {mode === "image" && (
-          <select aria-label="Aspect ratio" value={aspect} onChange={(e) => setAspect(e.target.value)}>
-            {ASPECTS.map((a) => <option key={a}>{a}</option>)}
-          </select>
-        )}
-        <button type="button" className="try-model" onClick={openKeyDialog} title="Change key or model">
-          {ready ? model || "No model" : "Set up Gemini key"}
-        </button>
-        <button type="button" className="btn primary" disabled={busy || !draft.trim()} onClick={run}>
-          {busy ? "Running..." : ready ? "Run" : "Add key"}
+        <button type="button" className="btn" onClick={onClose} aria-label="Close">
+          Close
         </button>
       </div>
-      <textarea
-        className="try-input"
-        aria-label="Prompt to run"
-        value={draft}
-        rows={Math.min(10, Math.max(3, draft.split("\n").length + 1))}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === "Enter" && run()}
-      />
-      <p className="hint">
-        {/\{[^}]*\}/.test(draft) && "Edit the {braced} parts for your idea; braces are removed when you run. "}
-        {/<<<image_\d+>>>|image[ _]\d/i.test(draft) && "Reference images aren't attached here, so the result uses the text only. "}
-        {mode === "image" && /\d+-\d+s|\bcuts?\b|speed ramp/i.test(draft) && "This is a video prompt, so you get a single still: a quick check of look and framing. "}
-        Cmd/Ctrl + Enter to run.
-      </p>
-      <div aria-live="polite">
-        {busy && <p className="note">{mode === "image" ? "Rendering the image. This takes 10-30 seconds." : "Waiting for Gemini..."}</p>}
-        {error && <p className="note error">{error}</p>}
-        {result && (
-          <div className="try-out">
-            {result.images.map((src, i) => (
-              <figure key={i}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`Generated result ${i + 1}`} />
-                <a className="inline" href={src} download={`frame-try-${i + 1}.png`}>Download</a>
-              </figure>
+      <div className="try">
+        <div className="try-bar">
+          <div className="seg" role="group" aria-label="Output type">
+            {(["text", "image"] as const).map((m) => (
+              <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}>
+                {m === "text" ? "Text" : "Image"}
+              </button>
             ))}
-            {result.text && (
-              <div className="try-text">
-                <div className="try-text-head">
-                  <span>Output</span>
-                  <CopyButton text={result.text} />
-                </div>
-                <div className="try-text-body">{result.text}</div>
-              </div>
-            )}
           </div>
-        )}
+          {mode === "image" && (
+            <select aria-label="Aspect ratio" value={aspect} onChange={(e) => setAspect(e.target.value)}>
+              {ASPECTS.map((a) => (
+                <option key={a}>{a}</option>
+              ))}
+            </select>
+          )}
+          <button type="button" className="try-model" onClick={openKeyDialog} title="Change key or model">
+            {ready ? model || "No model" : "Set up Gemini key"}
+          </button>
+          <button type="button" className="btn primary" disabled={busy || !draft.trim()} onClick={run}>
+            {busy ? "Running..." : ready ? "Run" : "Add key"}
+          </button>
+        </div>
+        <textarea
+          className="try-input"
+          aria-label="Prompt to run"
+          value={draft}
+          rows={Math.min(10, Math.max(3, draft.split("\n").length + 1))}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === "Enter" && run()}
+        />
+        <p className="hint">
+          {/\{[^}]*\}/.test(draft) && "Edit the {braced} parts for your idea; braces are removed when you run. "}
+          {/<<<image_\d+>>>|image[ _]\d/i.test(draft) && "Reference images aren't attached here, so the result uses the text only. "}
+          {mode === "image" && /\d+-\d+s|\bcuts?\b|speed ramp/i.test(draft) && "This is a video prompt, so you get a single still: a quick check of look and framing. "}
+          Cmd/Ctrl + Enter to run.
+        </p>
+        <div aria-live="polite">
+          {busy && <p className="note">{mode === "image" ? "Rendering the image. This takes 10-30 seconds." : "Waiting for Gemini..."}</p>}
+          {error && <p className="note error">{error}</p>}
+          {result && (
+            <div className="try-out">
+              {result.images.map((src, i) => (
+                <figure key={i}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`Generated result ${i + 1}`} />
+                  <a className="inline" href={src} download={`frame-try-${i + 1}.png`}>
+                    Download
+                  </a>
+                </figure>
+              ))}
+              {result.text && (
+                <div className="try-text">
+                  <div className="try-text-head">
+                    <span>Output</span>
+                    <CopyButton text={result.text} />
+                  </div>
+                  <div className="try-text-body">{result.text}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </section>
+    </dialog>
   );
 }

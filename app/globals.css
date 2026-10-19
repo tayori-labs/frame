@@ -506,7 +506,7 @@ button.term.done { color: #5fd38d; }
 .prompt-actions { display: flex; gap: 6px; }
 button.copy.ghost { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px rgba(246, 169, 69, 0.45); }
 button.copy.ghost[aria-expanded="true"] { background: rgba(246, 169, 69, 0.12); }
-.try { border-top: 1px solid var(--line); padding: 14px; display: grid; gap: 10px; background: var(--panel); }
+.try { padding: 18px 22px 28px; display: grid; gap: 12px; align-content: start; }
 .try-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .try-bar select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; min-height: 36px; padding: 0 8px; font: inherit; font-size: 0.85rem; }
 .try-bar .btn { min-height: 36px; margin-left: auto; }
@@ -524,3 +524,13 @@ button.copy.ghost[aria-expanded="true"] { background: rgba(246, 169, 69, 0.12); 
 .try-text { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .try-text-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--panel-2); font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 .try-text-body { padding: 12px; white-space: pre-wrap; word-break: break-word; font-size: 0.9rem; line-height: 1.6; max-height: 420px; overflow: auto; }
+
+.sheet { position: fixed; inset: 0 0 0 auto; width: min(620px, 100vw); height: 100dvh; max-width: 100vw; max-height: none; margin: 0; padding: 0; border: 0; border-left: 1px solid var(--line); background: var(--panel); color: var(--text); overflow-y: auto; overscroll-behavior: contain; }
+.sheet[open] { animation: sheet-in 0.22s ease-out; }
+.sheet::backdrop { background: rgba(0, 0, 0, 0.55); }
+.sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 22px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.sheet-head small { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.7rem; font-weight: 600; }
+.sheet-head h2 { margin: 2px 0 0; font-size: 1.05rem; }
+.sheet-head .btn { min-height: 36px; }
+@keyframes sheet-in { from { transform: translateX(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sheet[open] { animation: none; } }
