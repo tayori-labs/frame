@@ -16,7 +16,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <div className="layout">
           <Sidebar workflows={workflows} />
-          <main id="main">{children}</main>
+          <main id="main">
+            {children}
+            <footer className="site-footer">
+              <span>&copy; 2026 Tayori Labs. All rights reserved.</span>
+              <a href="https://github.com/tayori-labs/frame" target="_blank" rel="noopener">GitHub</a>
+            </footer>
+          </main>
         </div>
       </body>
     </html>
