@@ -8,7 +8,9 @@ export default function Home() {
   return (
     <>
       <section className="hero">
-        <Image src="/header.jpg" alt="A glowing film strip of cinematic scenes arcing over a city at sunset" fill priority sizes="(max-width: 760px) 100vw, 900px" />
+        <div className="hero-media">
+          <Image src="/header.jpg" alt="A glowing film strip of cinematic scenes arcing over a city at sunset" fill priority sizes="(max-width: 760px) 100vw, calc(100vw - 240px)" />
+        </div>
         <div className="hero-body">
           <h1>Frame</h1>
           <p className="tagline">Ideas into every frame</p>
