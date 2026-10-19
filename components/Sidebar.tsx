@@ -11,6 +11,7 @@ const REFS = [
   ["/vocab", "Prompt vocabulary"],
   ["/templates", "Templates"],
   ["/finishing", "Finishing (Topaz)"],
+  ["/blur", "Face blur"],
 ];
 
 export type NavWorkflow = { id: string; name: string; steps: string[] };

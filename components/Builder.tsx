@@ -6,12 +6,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import {
-  authHeaders,
-  openKeyDialog,
-  statusLabel,
-  useGeminiKey,
-} from "@/lib/geminiKey";
+import { authHeaders, openKeyDialog, useGeminiKey } from "@/lib/geminiKey";
 import { DATA } from "@/lib/data";
 import {
   buildBrief,
@@ -37,7 +32,33 @@ const LABELS: Partial<Record<keyof typeof FIELDS, (v: string) => string>> = {
         "4:5": "4:5 feed",
       }) as Record<string, string>
     )[v],
+  audio: (v) =>
+    (
+      ({
+        "SFX only, music added in edit": "SFX only",
+        "Dialogue / talking to camera": "Dialogue to camera",
+      }) as Record<string, string>
+    )[v],
 };
+const ADVANCED: (keyof Form)[] = [
+  "budget",
+  "camera",
+  "lens",
+  "director",
+  "lighting",
+  "assets",
+  "notes",
+];
+const SHOWCASE: [string, string][] = [
+  ["", "No preference"],
+  ["AI physical product", "AI physical product"],
+  ["Own recording at the start", "Your recording first"],
+  ["Own recording in the middle", "Your recording in the middle"],
+  ["Own recording at the end", "Your recording last"],
+];
+const advancedOpen = (f: Form) =>
+  ADVANCED.some((k) => f[k] !== DEFAULT_FORM[k]);
+
 let lastPlan: Plan | null = null;
 
 const EXAMPLES: { name: string; form: Form }[] = [
@@ -99,6 +120,7 @@ const EXAMPLES: { name: string; form: Form }[] = [
         "Woman, mid 20s, hair in a loose clip, plain white t-shirt, no makeup yet. Frosted glass dropper bottle with a blank cream label, pale gold liquid. Small bathroom mirror, daylight from a window, a plant on the sill.",
       notes:
         "Casual speech, not an ad read. No other brand logos. No on-screen captions. Keep the bottle label blank.",
+      showcase: "AI physical product",
     },
   },
   {
@@ -123,6 +145,8 @@ const EXAMPLES: { name: string; form: Form }[] = [
   },
 ];
 const msg = (e: unknown) => (e as Error).message;
+const saveForm = (next: Form) =>
+  localStorage.setItem(FORM, JSON.stringify(next));
 
 export default function Builder() {
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
@@ -130,18 +154,42 @@ export default function Builder() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [plan, setPlan] = useState(lastPlan);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [undo, setUndo] = useState<{ form: Form; more: boolean } | null>(null);
   const result = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setForm((f) => ({
-      ...f,
+    const next: Form = {
+      ...DEFAULT_FORM,
       ...JSON.parse(localStorage.getItem(FORM) || "{}"),
-    }));
+    };
+    setForm(next);
+    setMoreOpen(advancedOpen(next));
   }, []);
+
+  function clearForm() {
+    setUndo({ form: { ...form }, more: moreOpen });
+    setForm(DEFAULT_FORM);
+    saveForm(DEFAULT_FORM);
+    setMoreOpen(false);
+    setError("");
+  }
+
+  function undoClear() {
+    if (!undo) return;
+    setForm(undo.form);
+    saveForm(undo.form);
+    setMoreOpen(undo.more);
+    setUndo(null);
+  }
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(DEFAULT_FORM);
 
   function applyExample(next: Form) {
     setForm(next);
-    localStorage.setItem(FORM, JSON.stringify(next));
+    saveForm(next);
+    setMoreOpen(true);
+    setUndo(null);
     setError("");
   }
 
@@ -154,7 +202,8 @@ export default function Builder() {
     ) => {
       const next = { ...form, [k]: e.target.value };
       setForm(next);
-      localStorage.setItem(FORM, JSON.stringify(next));
+      saveForm(next);
+      setUndo(null);
     };
 
   function briefText() {
@@ -207,9 +256,14 @@ export default function Builder() {
           "The plan is shown, but it couldn't be saved. This browser's storage is full.",
         ),
       );
-      requestAnimationFrame(() =>
-        result.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      );
+      if (window.matchMedia("(max-width: 1239px)").matches) {
+        requestAnimationFrame(() =>
+          result.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        );
+      }
     } catch (err) {
       setError(`Could not generate: ${msg(err)}`);
     } finally {
@@ -238,42 +292,11 @@ export default function Builder() {
     )
     .join("\n\n");
 
-  return (
-    <>
-      <div className="settings key-row">
-        <span>
-          Gemini{" "}
-          <span className={`pill status-${key.status}`}>
-            {statusLabel(key)}
-          </span>
-          {key.status === "ready" && <code>{key.model}</code>}
-        </span>
-        <button type="button" className="btn" onClick={openKeyDialog}>
-          {key.status === "ready" ? "Change key or model" : "Set up Gemini key"}
-        </button>
-      </div>
+  const needsKey = key.status === "missing" || key.status === "error";
 
+  return (
+    <div className="builder-layout">
       <form className="builder" onSubmit={generate} noValidate>
-        <fieldset>
-          <legend>Start from an example</legend>
-          <p className="hint">
-            Click one to fill every field. Then edit anything before you
-            generate.
-          </p>
-          <div className="example-row">
-            {EXAMPLES.map((ex) => (
-              <button
-                key={ex.name}
-                type="button"
-                aria-pressed={form.idea === ex.form.idea}
-                onClick={() => applyExample(ex.form)}
-              >
-                <b>{ex.name}</b>
-                <span>{ex.form.idea}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
         <fieldset>
           <legend>Video type</legend>
           <div className="chips">
@@ -291,9 +314,57 @@ export default function Builder() {
             ))}
           </div>
         </fieldset>
-        <label className="field">
-          <span>Your idea</span>
+        {form.type === "ugc" && (
+          <label className="field">
+            <span>Product showcase</span>
+            <select
+              name="showcase"
+              value={form.showcase}
+              onChange={set("showcase")}
+              aria-describedby={
+                form.showcase === "Own recording in the middle"
+                  ? "showcase-hint"
+                  : undefined
+              }
+            >
+              {SHOWCASE.map(([v, label]) => (
+                <option key={v || "none"} value={v}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            {form.showcase === "Own recording in the middle" && (
+              <p className="hint" id="showcase-hint">
+                Your recording sits in the middle, and the talk is written as
+                two parts stitched around the demo.
+              </p>
+            )}
+          </label>
+        )}
+        <div className="field">
+          <div className="idea-head">
+            <label htmlFor="idea">Your idea</label>
+            <div
+              className="example-chips"
+              role="group"
+              aria-labelledby="example-label"
+            >
+              <span id="example-label">Try an example</span>
+              {EXAMPLES.map((ex) => (
+                <button
+                  key={ex.name}
+                  type="button"
+                  title={ex.form.idea}
+                  aria-pressed={form.idea === ex.form.idea}
+                  onClick={() => applyExample(ex.form)}
+                >
+                  {ex.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <textarea
+            id="idea"
             name="idea"
             rows={4}
             required
@@ -301,57 +372,104 @@ export default function Builder() {
             onChange={set("idea")}
             placeholder="e.g. A street racer is hunted by a police chopper across a neon city and escapes into a tunnel"
           />
-        </label>
-        <div className="form-grid">
+        </div>
+        <div className="primary-fields">
           {select("duration", "Duration")}
           {select("ratio", "Aspect ratio")}
           {select("audio", "Audio")}
-          {select("budget", "Priority")}
         </div>
-        <h3>Look (optional)</h3>
-        <div className="form-grid">
-          {select("camera", "Camera")}
-          {select("lens", "Lens")}
-          {select("director", "Director / style")}
-          {select("lighting", "Lighting")}
-        </div>
-        <label className="field">
-          <span>Characters, products &amp; props (optional)</span>
-          <textarea
-            name="assets"
-            rows={3}
-            value={form.assets}
-            onChange={set("assets")}
-            placeholder="e.g. Young man with twist-out hair and a cream hoodie; blacked-out muscle car with red LED light bars"
-          />
-        </label>
-        <label className="field">
-          <span>Notes / must avoid (optional)</span>
-          <textarea
-            name="notes"
-            rows={2}
-            value={form.notes}
-            onChange={set("notes")}
-            placeholder="e.g. No on-screen text, keep generation cost low"
-          />
-        </label>
-        <div className="actions">
-          <button type="submit" className="btn primary" disabled={busy}>
-            {busy ? "Generating..." : "Generate prompts"}
-          </button>
-          <CopyButton className="btn" text={briefText}>
-            Copy brief
-          </CopyButton>
+        <details
+          className="more"
+          open={moreOpen}
+          onToggle={(e) => setMoreOpen(e.currentTarget.open)}
+        >
+          <summary>More options</summary>
+          <div className="more-body">
+            <div className="form-grid">
+              {select("budget", "Priority")}
+              {select("camera", "Camera")}
+              {select("lens", "Lens")}
+              {select("director", "Director / style")}
+              {select("lighting", "Lighting")}
+            </div>
+            <label className="field">
+              <span>Characters, products &amp; props</span>
+              <textarea
+                name="assets"
+                rows={3}
+                value={form.assets}
+                onChange={set("assets")}
+                placeholder="e.g. Young man with twist-out hair and a cream hoodie; blacked-out muscle car with red LED light bars"
+              />
+            </label>
+            <label className="field">
+              <span>Notes / must avoid</span>
+              <textarea
+                name="notes"
+                rows={2}
+                value={form.notes}
+                onChange={set("notes")}
+                placeholder="e.g. No on-screen text, keep generation cost low"
+              />
+            </label>
+          </div>
+        </details>
+        <div className="form-foot">
+          {error && (
+            <p className="note error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="actions">
+            <button type="submit" className="btn primary" disabled={busy}>
+              {busy ? "Generating..." : "Generate prompts"}
+            </button>
+            <CopyButton className="btn ghost" text={briefText}>
+              Copy brief
+            </CopyButton>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={!dirty}
+              onClick={clearForm}
+            >
+              Clear inputs
+            </button>
+          </div>
+          {undo && (
+            <p className="hint">
+              Inputs cleared.{" "}
+              <button type="button" className="text-btn" onClick={undoClear}>
+                Undo
+              </button>
+            </p>
+          )}
+          {needsKey && (
+            <p className="hint">
+              No Gemini key connected.{" "}
+              <button
+                type="button"
+                className="text-btn"
+                onClick={openKeyDialog}
+              >
+                Set up key
+              </button>{" "}
+              or use Copy brief with any chatbot.
+            </p>
+          )}
         </div>
       </form>
-
-      <div ref={result} aria-live="polite">
+      <section
+        className="result-col"
+        ref={result}
+        aria-live="polite"
+        aria-busy={busy}
+      >
         {busy && (
           <p className="note">
             Writing your plan. This usually takes 20-60 seconds.
           </p>
         )}
-        {error && <p className="note error">{error}</p>}
         {plan && !busy && (
           <>
             <div className="plan-head">
@@ -361,7 +479,16 @@ export default function Builder() {
             <PlanView plan={plan} type={form.type} />
           </>
         )}
-      </div>
-    </>
+        {!plan && !busy && (
+          <div className="result-empty">
+            <p>Your plan will appear here</p>
+            <p className="hint">
+              Generate prompts to get a step-by-step plan with copy-ready
+              prompts.
+            </p>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

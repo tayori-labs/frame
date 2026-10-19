@@ -8,7 +8,8 @@ type Props = { params: Promise<{ id: string }> };
 const find = (id: string) => DATA.categories.find((c) => c.id === id);
 
 export const dynamicParams = false;
-export const generateStaticParams = () => DATA.categories.map((c) => ({ id: c.id }));
+export const generateStaticParams = () =>
+  DATA.categories.map((c) => ({ id: c.id }));
 
 export async function generateMetadata({ params }: Props) {
   return { title: find((await params).id)?.name };
@@ -18,7 +19,13 @@ export default async function Workflow({ params }: Props) {
   const c = find((await params).id);
   if (!c) notFound();
   const n = DATA.categories[DATA.categories.indexOf(c) + 1];
-  const next = n ? { href: `/workflows/${n.id}`, name: n.name, text: n.tagline } : { href: "/models", name: "Model directory", text: "Match the model to the task, with per-second costs." };
+  const next = n
+    ? { href: `/workflows/${n.id}`, name: n.name, text: n.tagline }
+    : {
+        href: "/models",
+        name: "Model directory",
+        text: "Match the model to the task, with per-second costs.",
+      };
   return (
     <>
       <h1>{c.name}</h1>
@@ -29,17 +36,62 @@ export default async function Workflow({ params }: Props) {
       {c.steps.map((s, i) => (
         <section className="step" id={`step-${i + 1}`} key={s.title}>
           <StepHead n={i + 1} title={s.title} />
-          {s.req.length > 0 && (<><h3>Requirements</h3><List items={s.req} /></>)}
-          {s.models.length > 0 && (<><h3>Suggested models</h3><div className="models">{s.models.map((m) => <Model key={m[0]} m={m} />)}</div></>)}
-          {s.alt.length > 0 && (<><h3>Alternatives</h3><div className="models">{s.alt.map((m) => <Model key={m[0]} m={m} alt />)}</div></>)}
-          {s.tips.length > 0 && (<><h3>Tips</h3><List items={s.tips} className="tips" /></>)}
+          {s.req.length > 0 && (
+            <>
+              <h3>Requirements</h3>
+              <List items={s.req} />
+            </>
+          )}
+          {s.models.length > 0 && (
+            <>
+              <h3>Suggested models</h3>
+              <div className="models">
+                {s.models.map((m) => (
+                  <Model key={m[0]} m={m} />
+                ))}
+              </div>
+            </>
+          )}
+          {s.alt.length > 0 && (
+            <>
+              <h3>Alternatives</h3>
+              <div className="models">
+                {s.alt.map((m) => (
+                  <Model key={m[0]} m={m} alt />
+                ))}
+              </div>
+            </>
+          )}
+          {s.tips.length > 0 && (
+            <>
+              <h3>Tips</h3>
+              <List items={s.tips} className="tips" />
+            </>
+          )}
+          {[...s.tips, ...s.req].some(
+            (t) => /face/i.test(t) && /eras/i.test(t),
+          ) && (
+            <p className="hint">
+              <Link href="/blur">Blur or cover the face</Link> on the full-body
+              panel. The image stays in this browser.
+            </p>
+          )}
           <Diagram name={s.diagram} />
-          {s.prompts.length > 0 && (<><h3>Prompts</h3>{s.prompts.map((p) => <PromptBlock key={p.label} label={p.label} text={p.text} />)}</>)}
+          {s.prompts.length > 0 && (
+            <>
+              <h3>Prompts</h3>
+              {s.prompts.map((p) => (
+                <PromptBlock key={p.label} label={p.label} text={p.text} />
+              ))}
+            </>
+          )}
         </section>
       ))}
       <Link className="card read-next" href={next.href}>
         <small>Read next</small>
-        <b>{next.name} {"\u2192"}</b>
+        <b>
+          {next.name} {"\u2192"}
+        </b>
         <span>{next.text}</span>
       </Link>
     </>

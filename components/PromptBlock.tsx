@@ -20,6 +20,69 @@ const TEXT_START =
   /^(i\b|i'|act as|write|using my|create a|show me|install|\/|make|plan|break|give me|list)/i;
 export const guessMode = (text: string): TryMode =>
   TEXT_START.test(text.trim()) ? "text" : "image";
+type RefImage = { mimeType: string; data: string; url: string };
+
+async function fileToRef(file: File): Promise<RefImage> {
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type))
+    throw new Error("Use a PNG, JPEG, or WebP");
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not read that image");
+  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("Could not read that image"))),
+      "image/jpeg",
+      0.85,
+    ),
+  );
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  const data = btoa(bin);
+  return {
+    mimeType: "image/jpeg",
+    data,
+    url: `data:image/jpeg;base64,${data}`,
+  };
+}
+
+const MAX_REFS = 4;
+
+// Highest <<<image_N>>> / image_N the prompt names, capped at what the API accepts.
+function refSlotCount(draft: string) {
+  let max = 0;
+  for (const m of draft.matchAll(/<<<image_(\d+)(?:\.\.(\d+))?>>>/gi))
+    max = Math.max(max, Number(m[2] || m[1]));
+  for (const m of draft.matchAll(/\bimage[ _](\d+)\b/gi))
+    max = Math.max(max, Number(m[1]));
+  return Math.min(MAX_REFS, max);
+}
+
+const namesRefs = (draft: string) =>
+  refSlotCount(draft) > 0 || /attached reference/i.test(draft);
+
+// Slots are positional: image_1 is refs[0]. A later image with a hole before it would be sent under the wrong number.
+function packedRefs(refs: (RefImage | null)[]) {
+  const out: RefImage[] = [];
+  for (let i = 0; i < refs.length; i++) {
+    const img = refs[i];
+    if (!img) {
+      if (refs.slice(i + 1).some(Boolean))
+        throw new Error(`Add image_${i + 1} before the later references.`);
+      break;
+    }
+    out.push(img);
+  }
+  return out;
+}
+
 const guessAspect = (text: string) =>
   /9:16|vertical|selfie/i.test(text)
     ? "9:16"
@@ -103,11 +166,37 @@ function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
   const [error, setError] = useState("");
   const [result, setResult] = useState<TryResult | null>(null);
   const [saved, setSaved] = useState<boolean | null>(null);
+  const [refs, setRefs] = useState<(RefImage | null)[]>([]);
+  const [refError, setRefError] = useState("");
   const ready = s.status === "ready";
   const model = mode === "image" ? s.imageModel : s.model;
+  const slotCount = refSlotCount(draft);
+  const showRefs = mode === "image" || namesRefs(draft) || refs.some(Boolean);
+
+  async function attach(file: File | undefined, index: number) {
+    if (!file) return;
+    setRefError("");
+    try {
+      const next = await fileToRef(file);
+      setRefs((xs) => {
+        const copy = xs.slice();
+        copy[index] = next;
+        return copy.slice(0, MAX_REFS);
+      });
+    } catch (err) {
+      setRefError((err as Error).message);
+    }
+  }
 
   async function run() {
     if (!ready) return openKeyDialog();
+    let packed: RefImage[];
+    try {
+      packed = packedRefs(refs);
+    } catch (err) {
+      setError((err as Error).message);
+      return;
+    }
     setBusy(true);
     setError("");
     setResult(null);
@@ -117,7 +206,13 @@ function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
       const r = await fetch("/api/try", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ mode, model, aspectRatio: aspect, prompt }),
+        body: JSON.stringify({
+          mode,
+          model,
+          aspectRatio: aspect,
+          prompt,
+          images: packed.map(({ mimeType, data }) => ({ mimeType, data })),
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
@@ -217,11 +312,74 @@ function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
             (e.metaKey || e.ctrlKey) && e.key === "Enter" && run()
           }
         />
+        {showRefs && (
+          <div className="try-refs" aria-label="Reference images">
+            {Array.from(
+              { length: slotCount || Math.min(MAX_REFS, refs.length + 1) },
+              (_, i) => {
+                const img = refs[i];
+                const named = slotCount > 0;
+                if (!named && !img && i !== refs.length) return null;
+                if (!named && i >= MAX_REFS) return null;
+                return (
+                  <div
+                    className={named ? "try-ref-slot" : "try-ref-slot wide"}
+                    key={i}
+                  >
+                    {img ? (
+                      <figure>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.url} alt={`Reference image ${i + 1}`} />
+                        <button
+                          type="button"
+                          aria-label={`Remove image_${i + 1}`}
+                          onClick={() =>
+                            setRefs((xs) => {
+                              const copy = xs.slice();
+                              copy[i] = null;
+                              return named ? copy : copy.filter(Boolean);
+                            })
+                          }
+                        >
+                          ×
+                        </button>
+                      </figure>
+                    ) : (
+                      <label
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          attach(e.dataTransfer.files?.[0], i);
+                        }}
+                      >
+                        {named ? "Add" : "Add reference"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-label={
+                            named
+                              ? `Attach image_${i + 1}`
+                              : "Attach a reference image"
+                          }
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            attach(file, named ? i : refs.length);
+                          }}
+                        />
+                      </label>
+                    )}
+                    {named && <span>image_{i + 1}</span>}
+                  </div>
+                );
+              },
+            )}
+          </div>
+        )}
+        {refError && <p className="note error">{refError}</p>}
         <p className="hint">
           {/\{[^}]*\}/.test(draft) &&
             "Edit the {braced} parts for your idea; braces are removed when you run. "}
-          {/<<<image_\d+>>>|image[ _]\d/i.test(draft) &&
-            "Reference images aren't attached here, so the result uses the text only. "}
           {mode === "image" &&
             /\d+-\d+s|\bcuts?\b|speed ramp/i.test(draft) &&
             "This is a video prompt, so you get a single still: a quick check of look and framing. "}

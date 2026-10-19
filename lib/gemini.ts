@@ -101,6 +101,7 @@ export async function tryPrompt(
   const image = mode === "image";
   if (image && !ASPECTS.includes(aspectRatio as string))
     throw new Error("Invalid aspect ratio");
+  const refs = referenceImages(input);
   const parts = await generate(
     key,
     typeof model === "string" && model
@@ -109,7 +110,21 @@ export async function tryPrompt(
         ? DEFAULT_IMAGE_MODEL
         : DEFAULT_MODEL,
     {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [
+        {
+          role: "user",
+          parts: [
+            ...refs.map((img) => ({
+              inlineData: { mimeType: img.mimeType, data: img.data },
+            })),
+            {
+              text: refs.length
+                ? `${prompt}\n\nThe attached images are the references, in order: ${refs.map((_, i) => `image_${i + 1}`).join(", ")}.`
+                : prompt,
+            },
+          ],
+        },
+      ],
       generationConfig: image
         ? {
             responseModalities: ["TEXT", "IMAGE"],
@@ -127,6 +142,29 @@ export async function tryPrompt(
         "The model returned no image. Try rephrasing the prompt.",
     );
   return { text: textOf(parts), images };
+}
+
+function referenceImages(input: unknown) {
+  const raw = (input as { images?: unknown })?.images;
+  if (raw == null) return [];
+  if (!Array.isArray(raw) || raw.length > 4)
+    throw new Error("Attach up to 4 reference images");
+  return raw.map((img, i) => {
+    const rec = img as { mimeType?: unknown; data?: unknown };
+    if (
+      rec.mimeType !== "image/jpeg" &&
+      rec.mimeType !== "image/png" &&
+      rec.mimeType !== "image/webp"
+    )
+      throw new Error(`Reference ${i + 1} must be a PNG, JPEG, or WebP`);
+    if (
+      typeof rec.data !== "string" ||
+      !rec.data ||
+      rec.data.length > 1_500_000
+    )
+      throw new Error(`Reference ${i + 1} is too large`);
+    return { mimeType: rec.mimeType, data: rec.data };
+  });
 }
 
 const SCHEMA = {
