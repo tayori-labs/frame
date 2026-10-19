@@ -48,12 +48,12 @@ Panel 2: full view shot of the {prop}.
 
 ## Arcane × Spider-Verse — character snippet
 ```
-in 3 panel character sheet against grey studio background, 1 front facing close up and two full body of front and back, 3D cel-shaded painterly animation in the style of Spider-Verse and Arcane, bold hand-painted brushstrokes, confident graphic line accents.
+in 3 panel character sheet against grey studio background, 1 front facing close up and two full body of front and back, 3D cel-shaded painterly animation in the style of {Arcane × Spider-Verse}, bold hand-painted brushstrokes, confident graphic line accents.
 ```
 
 ## Arcane × Spider-Verse — location snippet
 ```
-3D cel-shaded painterly animation in the style of Spider-Verse and Arcane, bold hand-painted brushstrokes, confident graphic line accents.
+3D cel-shaded painterly animation in the style of {Arcane × Spider-Verse}, bold hand-painted brushstrokes, confident graphic line accents.
 ```
 
 ## Speed-ramp structure

@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import CopyButton from "./CopyButton";
 import { authHeaders, openKeyDialog, useGeminiKey } from "@/lib/geminiKey";
 import { ASPECTS, type TryResult } from "@/lib/gemini";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export type TryMode = "text" | "image";
 
@@ -13,7 +15,12 @@ const TEXT_START = /^(i\b|i'|act as|write|using my|create a|show me|install|\/|m
 export const guessMode = (text: string): TryMode => (TEXT_START.test(text.trim()) ? "text" : "image");
 const guessAspect = (text: string) => (/9:16|vertical|selfie/i.test(text) ? "9:16" : /4:5/.test(text) ? "4:5" : /1:1|square/i.test(text) ? "1:1" : "16:9");
 
-type Props = { label: string; text: string; children?: ReactNode; tryMode?: TryMode | false };
+type Props = {
+  label: string;
+  text: string;
+  children?: ReactNode;
+  tryMode?: TryMode | false;
+};
 
 export default function PromptBlock({ label, text, children, tryMode }: Props) {
   const [open, setOpen] = useState(false);
@@ -48,7 +55,14 @@ export default function PromptBlock({ label, text, children, tryMode }: Props) {
   );
 }
 
-type SheetProps = { id: string; label: string; text: string; initialMode: TryMode; open: boolean; onClose: () => void };
+type SheetProps = {
+  id: string;
+  label: string;
+  text: string;
+  initialMode: TryMode;
+  open: boolean;
+  onClose: () => void;
+};
 
 // Stays mounted after the first open so the draft and results survive closing the sheet.
 function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
@@ -77,7 +91,12 @@ function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
       const r = await fetch("/api/try", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ mode, model, aspectRatio: aspect, prompt: draft.replace(/\{([^{}]*)\}/g, "$1") }),
+        body: JSON.stringify({
+          mode,
+          model,
+          aspectRatio: aspect,
+          prompt: draft.replace(/\{([^{}]*)\}/g, "$1"),
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
@@ -165,7 +184,20 @@ function TrySheet({ id, label, text, initialMode, open, onClose }: SheetProps) {
                     <span>Output</span>
                     <CopyButton text={result.text} />
                   </div>
-                  <div className="try-text-body">{result.text}</div>
+                  <div className="try-text-body">
+                    <Markdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ children, href }) => (
+                          <a href={href} target="_blank" rel="noopener">
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
+                      {result.text}
+                    </Markdown>
+                  </div>
                 </div>
               )}
             </div>

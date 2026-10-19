@@ -21,8 +21,8 @@ export type Data = {
 // Model tuple: [name, why]
 // Placeholders inside prompts use {curly braces} and are highlighted in the UI.
 
-const STYLE_SNIPPET_CHAR = "in 3 panel character sheet against grey studio background, 1 front facing close up and two full body of front and back, 3D cel-shaded painterly animation in the style of Spider-Verse and Arcane, bold hand-painted brushstrokes, confident graphic line accents.";
-const STYLE_SNIPPET_LOC = "3D cel-shaded painterly animation in the style of Spider-Verse and Arcane, bold hand-painted brushstrokes, confident graphic line accents.";
+const STYLE_SNIPPET_CHAR = "in 3 panel character sheet against grey studio background, 1 front facing close up and two full body of front and back, 3D cel-shaded painterly animation in the style of {Arcane × Spider-Verse}, bold hand-painted brushstrokes, confident graphic line accents.";
+const STYLE_SNIPPET_LOC = "3D cel-shaded painterly animation in the style of {Arcane × Spider-Verse}, bold hand-painted brushstrokes, confident graphic line accents.";
 
 const CHARACTER_SHEET = `{subject description only}.
 3-panel character sheet on a flat neutral grey studio background, evenly lit, no environment, no props, no cast shadows on the backdrop.
@@ -89,7 +89,7 @@ export const DATA: Data = {
           tips: ["Characters + locations are the two assets that power every shot. List vehicles/props separately."],
           prompts: [{
             label: "Story breakdown",
-            text: `I want to make a {30}-second stylized animated short in the Arcane × Spider-Verse style.
+            text: `I want to make a {30}-second stylized animated short in the {Arcane × Spider-Verse} style.
 Idea: {e.g. a street racer is hunted by a police chopper across a neon cyberpunk city}.
 1. Split it into {3} Seedance 2.0 generations of 5–15 seconds each, with a 1-line purpose for each (calm intro → build → action payoff).
 2. List every asset I need to generate first: characters, vehicles, props, locations — one-line visual description each.
@@ -133,7 +133,7 @@ Write a Seedance 2.0 prompt for a {13}-second, {3}-cut clip: {calm intro — dri
 Format:
 - Bind each <<<image_N>>> with a precise visual description and what it's a reference for.
 - SPATIAL line: where everything sits.
-- Style line: "3D cel-shaded painterly animation, Spider-Verse meets Arcane — bold hand-painted brushstrokes, confident graphic linework, visible canvas texture. Cinematic anamorphic framing. Hollywood-level animated cinematography."
+- Style line: "3D cel-shaded painterly animation, {Arcane × Spider-Verse} — bold hand-painted brushstrokes, confident graphic linework, visible canvas texture. Cinematic anamorphic framing. Hollywood-level animated cinematography."
 - Each CUT: shot size + angle, camera move, speed (normal/fast), exact action.
 - SFX only line. No dialogue. No music.`
           }]
@@ -150,7 +150,7 @@ Format:
 <<<image_1>>> — Sleek blacked-out modern muscle car, glossy mirror-black, sharp faceted body panels, thin red LED light bars front and rear, dark multi-spoke wheels with red calipers. Vehicle reference, all angles.
 <<<image_2>>> — Neon-noir cyberpunk skyline at night, towering skyscrapers with cyan, magenta and red signage, a glowing red emblem, a wide bridge spanning toward the city. Environment, location and lighting reference.
 SPATIAL: <<<image_3>>> sits low inside <<<image_1>>>. <<<image_1>>> is parked on the left edge of a wide bridge in <<<image_2>>>, the neon skyline filling the background. Night, dry road, clear air.
-3D cel-shaded painterly animation, Spider-Verse meets Arcane — bold hand-painted brushstrokes, Cinematic anamorphic framing, Hollywood-level animated cinematography. A multi-cut sequence of 13 seconds duration, calm and atmospheric — the stillness before the chase.
+3D cel-shaded painterly animation, {Arcane × Spider-Verse} — bold hand-painted brushstrokes, Cinematic anamorphic framing, Hollywood-level animated cinematography. A multi-cut sequence of 13 seconds duration, calm and atmospheric — the stillness before the chase.
 CUT — extreme macro close-up, slow smooth dolly-back with a slight arc, normal speed — opens tight on the white wired earbud seated in <<<image_3>>>'s ear, diamond stud subtly glinting beside it, the cable trailing down his neck past a fine-line tattoo. The camera pulls back and arcs around, revealing <<<image_3>>> low in the seat, warm amber light on his face against the cool blue night, head tipped back, eyes half-closed, subtly nodding to the music, tattooed ringed hand loose on the wheel.
 CUT — low diagonal angle, slow creeping push, normal speed — camera low and off the front corner of <<<image_1>>>, front and side together in one diagonal view, red light bars glowing, neon rim-lighting every faceted edge. Slow, deliberate — savoring the car. Coiled, cool, ready.
 CUT — wide establishing shot, slow majestic jib up, normal speed — <<<image_1>>> parked on the left edge of the wide bridge, small against the vast glowing <<<image_2>>> skyline. The camera cranes slowly upward and back. Serene, breathtaking, still.
@@ -161,14 +161,14 @@ SFX only: distant neon-city hum and electrical buzz, the faint tick of the parke
 <<<image_2>>> — neon-noir cyberpunk skyline at night with a wide bridge. Environment, location and lighting reference.
 <<<image_3>>> is only for reference of the car's placement on the bridge. Frame from the previous video output.
 SPATIAL: the black muscle car is parked on the left side of the bridge, facing forward. The chopper approaches from behind and above, descending toward it. One single helicopter throughout.
-3D cel-shaded painterly animation, Spider-Verse meets Arcane — bold hand-painted brushstrokes, confident graphic linework, visible canvas texture. Cinematic anamorphic framing, dynamic kinetic camera. A two-cut sequence of 5 sec duration.
+3D cel-shaded painterly animation, {Arcane × Spider-Verse} — bold hand-painted brushstrokes, confident graphic linework, visible canvas texture. Cinematic anamorphic framing, dynamic kinetic camera. A two-cut sequence of 5 sec duration.
 CUT — fast dynamic shot, rapid whip zoom, fast speed — a single patrolling chopper tears across the frame against the neon skyline, rotor blades blurring, searchlight sweeping. Only one helicopter in frame.
 CUT — high aerial over-the-shoulder shot looking straight down, smooth descending push, normal speed — the camera rides above and behind the chopper as it drops into the foreground, looking down at the black muscle car on the bridge. The searchlight locks onto the car, pinning it in a bright pool of light. One single helicopter only.
 SFX only: heavy rotor chop building from a distant thud to a loud overhead beat, wind, tense low droning bass, faint electric hum of the city. No dialogue. No music.` },
             {
               label: "Example — the chase (10s, 3 cuts)", text: `{Bind car, helicopter, city, and police cruiser references as <<<image_1..5>>>.}
 SPATIAL: the black muscle car races through the canyon streets of the neon city at night, pursued by police cruisers and tracked from above by the single chopper with its searchlight. One helicopter throughout. High-speed chase.
-3D cel-shaded painterly animation, Spider-Verse meets Arcane — bold hand-painted brushstrokes, confident graphic linework, visible canvas texture. Cinematic anamorphic framing, aggressive kinetic handheld camera, heavy motion blur, speed lines. A three-cut high-action sequence of 10 seconds duration.
+3D cel-shaded painterly animation, {Arcane × Spider-Verse} — bold hand-painted brushstrokes, confident graphic linework, visible canvas texture. Cinematic anamorphic framing, aggressive kinetic handheld camera, heavy motion blur, speed lines. A three-cut high-action sequence of 10 seconds duration.
 CUT — low chase tracking shot, camera racing along the asphalt behind the car, fast speed — weaving between traffic, skyscrapers streaking past in heavy motion blur, two police cruisers with red-and-blue strobes chasing, the chopper's searchlight raking across the car. Speed lines, violent energy.
 CUT — high aerial god's-eye shot, sweeping fast crane move, fast speed — straight down on the neon grid, the car a small dark dart cutting through glowing avenues, the searchlight chasing it as a moving pool of white light. One helicopter only.
 CUT — low front three-quarter hero angle, hard tracking-backward push, fast speed — camera racing backward ahead of the car as it powers toward the lens, headlights blazing, cyan and magenta reflections on the faceted body, strobes flaring behind. Explosive forward drive.
