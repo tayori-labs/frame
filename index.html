@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Video Generation Guide</title>
+    <style>
+      :root {
+        --bg: #0d0e11;
+        --panel: #15171c;
+        --panel-2: #1c1f26;
+        --line: #262a33;
+        --text: #e8e9ec;
+        --muted: #9aa0ab;
+        --accent: #f5c451;
+        --accent-ink: #1a1405;
+        --added: #7cc4ff;
+        --radius: 12px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.6 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        min-height: 100vh;
+      }
+      nav {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 24px 14px;
+        border-right: 1px solid var(--line);
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 0 10px 18px;
+        letter-spacing: -0.01em;
+      }
+      .brand small {
+        display: block;
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 0.78rem;
+      }
+      .nav-label {
+        color: var(--muted);
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 22px 10px 6px;
+        margin-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+      nav a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      nav a:hover {
+        background: var(--panel);
+        color: var(--text);
+      }
+      nav a[aria-current="page"] {
+        background: var(--panel-2);
+        color: var(--text);
+      }
+      .nav-num { flex: none; width: 18px; font: 600 0.7rem ui-monospace, Menlo, monospace; color: var(--muted); opacity: 0.7; }
+      nav a[aria-current="page"] .nav-num { color: var(--accent); opacity: 1; }
+      .nav-cta { margin-top: 4px; color: var(--accent) !important; background: rgba(245, 196, 81, 0.08); font-weight: 600; }
+      .nav-cta:hover, .nav-cta[aria-current="page"] { background: rgba(245, 196, 81, 0.16) !important; }
+      .nav-badge { margin-left: auto; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); }
+      .nav-sub { margin: 2px 0 8px 19px; padding-left: 10px; border-left: 1px solid var(--line); }
+      .nav-sub a { font-size: 0.8rem; line-height: 1.35; padding: 6px 10px; }
+      .nav-sub a[aria-current="step"] { color: var(--accent); background: none; }
+
+      main {
+        padding: 40px clamp(20px, 5vw, 64px) 96px;
+        max-width: 980px;
+        width: 100%;
+      }
+      h1 {
+        font-size: clamp(1.6rem, 3vw, 2.2rem);
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin: 40px 0 12px;
+        letter-spacing: -0.01em;
+      }
+      h3 {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 20px 0 8px;
+        font-weight: 600;
+      }
+      .lead {
+        color: var(--muted);
+        font-size: 1.05rem;
+        margin: 0 0 20px;
+        max-width: 65ch;
+      }
+      .lead a { color: var(--accent); text-underline-offset: 3px; }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .pill {
+        font-size: 0.78rem;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--panel-2);
+        color: var(--muted);
+      }
+      .note {
+        background: rgba(124, 196, 255, 0.08);
+        border-left: 3px solid var(--added);
+        padding: 10px 14px;
+        border-radius: 6px;
+        color: var(--muted);
+        margin: 16px 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: var(--panel);
+        border-radius: var(--radius);
+        padding: 18px;
+        text-decoration: none;
+        display: block;
+        transition: background 0.15s;
+      }
+      a.card:hover {
+        background: var(--panel-2);
+      }
+      .card b {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .card span {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .step {
+        background: var(--panel);
+        border-radius: var(--radius);
+        padding: 22px 24px;
+        margin: 14px 0;
+      }
+      .step-head {
+        display: flex;
+        gap: 14px;
+        align-items: baseline;
+      }
+      .num {
+        flex: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+        font-size: 0.85rem;
+      }
+      .step-head h2 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      li {
+        margin: 2px 0;
+      }
+      .tips li {
+        color: var(--muted);
+      }
+
+      .models {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .model {
+        background: var(--panel-2);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.88rem;
+        max-width: 100%;
+      }
+      .model b {
+        display: block;
+      }
+      .model span {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .model.alt {
+        background: transparent;
+        border: 1px solid var(--line);
+      }
+
+      .prompt {
+        margin: 10px 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .prompt-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: var(--panel-2);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .prompt pre {
+        margin: 0;
+        padding: 14px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font:
+          13px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        color: #cfd2d8;
+        max-height: 360px;
+        overflow: auto;
+      }
+      mark {
+        background: rgba(245, 196, 81, 0.16);
+        color: var(--accent);
+        border-radius: 3px;
+        padding: 0 2px;
+      }
+      button.copy {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 6px;
+        padding: 6px 12px;
+        min-height: 32px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+      button.copy.done {
+        background: #5fd38d;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      td:first-child {
+        white-space: nowrap;
+      }
+      td.term {
+        cursor: pointer;
+        color: var(--accent);
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 0.85rem;
+      }
+      td.term:hover {
+        text-decoration: underline;
+      }
+      .rules {
+        counter-reset: r;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+      }
+      .rules .card b::before {
+        counter-increment: r;
+        content: counter(r) ". ";
+        color: var(--accent);
+      }
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .flow span {
+        background: var(--panel);
+        padding: 6px 12px;
+        border-radius: 8px;
+        color: var(--text);
+      }
+
+      @media (max-width: 760px) {
+        .nav-sub, .nav-num { display: none; }
+        .step { scroll-margin-top: 72px; }
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        nav {
+          position: sticky;
+          height: auto;
+          display: flex;
+          gap: 4px;
+          overflow-x: auto;
+          padding: 10px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+          background: var(--bg);
+          z-index: 1;
+        }
+        .brand,
+        .nav-label {
+          display: none;
+        }
+        nav a {
+          white-space: nowrap;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+        }
+        td:first-child {
+          white-space: normal;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        * {
+          transition: none !important;
+        }
+      }
+      .diagram { margin: 16px 0; padding: 16px; background: var(--bg); border-radius: 10px; }
+      .dg { display: block; width: 100%; height: auto; }
+      .dg text { fill: var(--text); font-size: 13px; font-family: inherit; }
+      .dg .t { font-weight: 600; }
+      .dg .m { fill: var(--muted); font-size: 11px; }
+      .dg .sm { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+      .dg .a { fill: var(--accent); }
+      .dg .dark, .dg .badge { fill: var(--accent-ink); font-weight: 700; font-size: 12px; }
+      .dg .box { fill: var(--panel-2); stroke: var(--line); }
+      .dg .hi { stroke: var(--accent); stroke-width: 2; }
+      .dg .ln, .dg .lead { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+      .dg .lead { stroke-width: 1; opacity: 0.6; }
+      .dg .ln-h { fill: var(--muted); }
+      .dg .acc { stroke: var(--accent); stroke-width: 2.5; fill: none; }
+      .dg .acc-h { fill: var(--accent); }
+      .dg .sight { stroke: var(--muted); stroke-dasharray: 4 4; }
+      .dg .div { stroke: #4c5058; stroke-width: 2; }
+      .dg .greybg { fill: #6b6f77; }
+      .dg .erase { stroke: var(--accent); stroke-dasharray: 3 3; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+      .dg .skin { fill: #d8b49a; }
+      .dg .hair { fill: #2b2420; }
+      .dg .eye { fill: #2b2420; }
+      .dg .mouth { stroke: #8a4b3c; stroke-width: 1.2; fill: none; }
+      .dg .cloth { fill: #c0574a; }
+      .dg .pants { fill: #2c3140; }
+      .dg .prop { fill: #1d1f24; }
+      .dg .steel { fill: #b9bec7; }
+      .dg .logo { fill: none; stroke: #e8e9ec; stroke-width: 1.5; }
+      .dg .chip, .dg .frame { fill: none; stroke-width: 2; }
+      .dg .zone { fill: rgba(245, 196, 81, 0.08); }
+      .dg .sun { fill: var(--muted); opacity: 0.5; }
+      .dg .cam { fill: var(--panel-2); stroke: var(--text); }
+      .pp { color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); border-radius: 4px; padding: 1px 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+      .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; }
+      .legend .pp { padding: 4px 10px; border-radius: 999px; }
+      .step { scroll-margin-top: 16px; }
+      .settings { background: var(--panel); border-radius: var(--radius); padding: 14px 18px; margin: 0 0 20px; }
+      .settings summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+      .settings .form-grid { margin-top: 14px; }
+      .hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0 0; }
+      .hint a { color: var(--accent); }
+      .builder { display: grid; gap: 16px; }
+      .builder h3 { margin: 8px 0 -4px; }
+      .builder fieldset { border: 0; padding: 0; margin: 0; }
+      .builder legend, .field > span { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+      .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+      .field input, .field select, .field textarea { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: inherit; min-height: 44px; }
+      .field textarea { resize: vertical; }
+      .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); outline: none; }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chips input { position: absolute; opacity: 0; pointer-events: none; }
+      .chips span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 0.9rem; }
+      .chips input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+      .chips input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .btn { min-height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+      .btn:disabled { opacity: 0.6; cursor: progress; }
+      .note.error { border-left-color: #ff6b6b; color: #ffb3b3; }
+      .plan-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 32px; }
+      .plan-head h2 { margin: 0; }
+      .card.cta { margin: 0 0 8px; border: 1px solid rgba(245, 196, 81, 0.35); }
+      .card.cta b { color: var(--accent); }
+      .tree { background: var(--panel); border-radius: 10px; padding: 16px 18px; font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; margin: 0; }
+      .tree span { color: var(--muted); }
+      code { font: 0.85em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel-2); padding: 2px 6px; border-radius: 4px; }
+      a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+      a.inline { color: var(--accent); }
+      .step p.tips { margin: 12px 0 0; }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <nav id="nav" aria-label="Guide sections"></nav>
+      <main id="app" tabindex="-1"></main>
+    </div>
+
+    <script src="data.js" charset="utf-8"></script>
+    <script src="diagrams.js"></script>
+    <script src="builder.js"></script>
+    <script>
+      const $app = document.getElementById("app");
+      const $nav = document.getElementById("nav");
+      const copyBuf = [];
+
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      const hl = (s) =>
+        esc(s).replace(/\{[^}]+\}/g, (m) => `<mark>${m}</mark>`);
+
+      function promptBlock(label, text, html) {
+        const i = copyBuf.push(text) - 1;
+        return `<div class="prompt"><div class="prompt-head"><span>${esc(label)}</span><button class="copy" data-i="${i}">Copy</button></div><pre>${html || hl(text)}</pre></div>`;
+      }
+      const fig = (k) => (k ? `<figure class="diagram">${DIAGRAMS[k]}</figure>` : "");
+      const model = ([n, why], alt) =>
+        `<div class="model${alt ? " alt" : ""}"><b>${esc(n)}</b>${why ? `<span>${esc(why)}</span>` : ""}</div>`;
+      const table = (rows, heads, termCol) =>
+        `<table><thead><tr>${heads.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows
+          .map(
+            (r) =>
+              `<tr>${r.map((c, j) => (j === 0 && termCol ? `<td class="term" data-copy="${esc(c)}" title="Click to copy">${esc(c)}</td>` : `<td>${esc(c)}</td>`)).join("")}</tr>`,
+          )
+          .join("")}</tbody></table>`;
+
+      const pages = {
+        home() {
+          return `
+      <h1>AI Video Generation Guide</h1>
+      <p class="lead">A step-by-step playbook for each video type: what you need, which model to use, and copy-ready prompts for every step.</p>
+      <a class="card cta" href="#builder"><b>Have an idea? Open the prompt builder</b><span>Pick a video type and look, and get step-by-step prompts written for your idea.</span></a>
+      <h2>The pipeline every category follows</h2>
+      <div class="flow"><span>Plan with Claude</span>→<span>Build assets (sheets, frames)</span>→<span>Fix in an editor model</span>→<span>Write the motion prompt</span>→<span>Generate 2–4 takes</span>→<span>Upscale in Topaz</span>→<span>Edit + music</span></div>
+      <h2>Pick a category</h2>
+      <div class="grid">${DATA.categories.map((c) => `<a class="card" href="#${c.id}"><b>${esc(c.name)}</b><span>${esc(c.tagline)}</span></a>`).join("")}</div>
+      <h2>Golden rules</h2>
+      <div class="rules">${DATA.rules.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div>
+      <p class="note"><b>How to read prompts:</b> <mark>{highlighted}</mark> text is a placeholder you replace.</p>`;
+        },
+
+        category(c) {
+          return `
+      <h1>${esc(c.name)}</h1>
+      <p class="lead">${esc(c.tagline)}</p>
+      <div class="meta"><span class="pill">${esc(c.specs)}</span></div>
+      ${c.steps
+        .map(
+          (s, i) => `
+        <section class="step" id="${c.id}-${i + 1}">
+          <div class="step-head"><span class="num">${i + 1}</span><h2>${esc(s.title)}</h2></div>
+          ${s.req.length ? `<h3>Requirements</h3><ul>${s.req.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+          ${s.models.length ? `<h3>Suggested models</h3><div class="models">${s.models.map((m) => model(m)).join("")}</div>` : ""}
+          ${s.alt.length ? `<h3>Alternatives</h3><div class="models">${s.alt.map((m) => model(m, true)).join("")}</div>` : ""}
+          ${s.tips.length ? `<h3>Tips</h3><ul class="tips">${s.tips.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+          ${fig(s.diagram)}
+          ${s.prompts.length ? `<h3>Prompts</h3>${s.prompts.map((p) => promptBlock(p.label, p.text)).join("")}` : ""}
+        </section>`,
+        )
+        .join("")}`;
+        },
+
+        models() {
+          const m = DATA.models;
+          return `
+      <h1>Model directory</h1>
+      <p class="lead">Match the model to the task. Prices are approximate per-second generation costs.</p>
+      <h2>Image models</h2>${table(m.image, ["Model", "Use it for"])}
+      <h2>Video models</h2>${table(m.video, ["Model", "Use it for", "Cost"])}
+      <h2>Supporting tools</h2>${table(m.other, ["Tool", "Role"])}
+      <h2>More tools</h2>${table(m.more, ["Tool", "Use it for"])}`;
+        },
+
+        vocab() {
+          const v = DATA.vocab;
+          return `
+      <h1>Prompt vocabulary</h1>
+      <p class="lead">The dials every cinematographer controls. Click a term to copy it.</p>
+      ${fig("promptMap")}
+      <h2>Full examples</h2>
+      <p class="lead">Every example uses the same order. Swap one coloured part to change one dial.</p>
+      <div class="legend">${Object.values(DATA.promptParts).map(([n, c]) => `<span class="pp" style="--c:${c}">${n}</span>`).join("")}</div>
+      ${DATA.vocabExamples.map(([label, parts]) => promptBlock(label, parts.map((p) => p[1]).join(" "), parts.map(([k, t]) => `<span class="pp" style="--c:${DATA.promptParts[k][1]}" title="${DATA.promptParts[k][0]}">${esc(t)}</span>`).join(" "))).join("")}
+      <h2>Camera body</h2>${table(v.camera, ["Term", "The look it gives"], true)}
+      <h2>Lens</h2>${table(v.lens, ["Term", "The look it gives"], true)}
+      <h2>Director / DP style</h2>${table(v.director, ["Term", "The look it gives"], true)}
+      <h2>Lighting</h2>${table(v.lighting, ["Term", "When to use"], true)}
+      <h2>Shot size</h2>${fig("shotSizes")}${table(v.shots, ["Term", "When to use"], true)}
+      <h2>Camera angle</h2>${fig("cameraAngles")}${table(v.angles, ["Term", "When to use"], true)}
+      <h2>Camera movement</h2>${table(v.moves, ["Term", "Effect"], true)}`;
+        },
+
+        templates() {
+          return `
+      <h1>Prompt templates</h1>
+      <p class="lead">Reusable skeletons. Replace the highlighted placeholders.</p>
+      ${DATA.templates.map(([l, t, d]) => fig(d) + promptBlock(l, t)).join("")}
+      <h2>Character sheet checklist</h2>
+      <ul>
+        <li>16:9 split into 3 equal panels: close-up, front full body, back full body.</li>
+        <li>Flat grey background. White blows out skin and makes it look plastic.</li>
+        <li>Erase the face on the front full-body panel so the close-up is the only face reference.</li>
+        <li>Iterate on high-quality settings in a capable image model.</li>
+      </ul>
+      <h2>Every plot beat answers 4 questions</h2>
+      <ul><li>Shot size + angle</li><li>Camera motion</li><li>The action</li><li>The transition into the next beat (cut, whip pan, match cut)</li></ul>`;
+        },
+
+        builder: () => BUILDER.render(),
+
+        skill() {
+          const dir = "skills/video-prompt-director";
+          const cmd = (label, text) => promptBlock(label, text);
+          return `
+      <h1>Agent skill</h1>
+      <p class="lead">Install this guide into your own AI assistant. Give it a video idea and it returns a step-by-step plan with refined, paste-ready prompts, just like the prompt builder, but inside Claude, Cursor or any agent that supports Agent Skills.</p>
+      <div class="actions">
+        <a class="btn primary" href="skills/video-prompt-director.zip" download>Download skill (.zip)</a>
+        <a class="btn" href="${dir}/SKILL.md" target="_blank" rel="noopener">View SKILL.md</a>
+      </div>
+
+      <h2>What the skill does</h2>
+      <div class="flow"><span>Asks only for missing details</span>&rarr;<span>Picks the matching workflow</span>&rarr;<span>Splits into 15s generations</span>&rarr;<span>Writes every prompt in full</span>&rarr;<span>Checks against a checklist</span></div>
+
+      <h2>What's inside</h2>
+      <pre class="tree">video-prompt-director/
+├── SKILL.md              <span>instructions, output format, checklist</span>
+└── references/
+    ├── workflows.md      <span>step-by-step workflow + example prompts per video type</span>
+    ├── templates.md      <span>5-block prompt, character / prop sheets, speed ramp, Topaz</span>
+    ├── vocabulary.md     <span>camera, lens, director, lighting, shots + annotated examples</span>
+    └── models.md         <span>which model for which task, with costs</span></pre>
+
+      <h2>Install</h2>
+      <section class="step">
+        <div class="step-head"><span class="num">1</span><h2>Claude Code</h2></div>
+        <p class="tips">Unzip into your personal skills folder (all projects) or a project's <code>.claude/skills</code> folder, then start a new session.</p>
+        ${cmd("Personal (all projects)", "unzip video-prompt-director.zip -d ~/.claude/skills/")}
+        ${cmd("This project only", "unzip video-prompt-director.zip -d .claude/skills/")}
+      </section>
+      <section class="step">
+        <div class="step-head"><span class="num">2</span><h2>Claude app (web &amp; desktop)</h2></div>
+        <ul class="tips"><li>Open <b>Settings &rarr; Capabilities</b> and make sure code execution / Skills is turned on.</li><li>In the Skills section choose <b>Upload skill</b> and select <code>video-prompt-director.zip</code>.</li><li>Start a new chat. Claude loads the skill whenever you ask for video prompts.</li></ul>
+      </section>
+      <section class="step">
+        <div class="step-head"><span class="num">3</span><h2>Cursor</h2></div>
+        <p class="tips">Unzip into your personal or project skills folder, then open a new chat.</p>
+        ${cmd("Personal (all projects)", "unzip video-prompt-director.zip -d ~/.cursor/skills/")}
+        ${cmd("This project only", "unzip video-prompt-director.zip -d .cursor/skills/")}
+      </section>
+      <section class="step">
+        <div class="step-head"><span class="num">4</span><h2>Other agents</h2></div>
+        <p class="tips">Any tool that supports the Agent Skills format (a folder with a <code>SKILL.md</code>) works: copy the <code>video-prompt-director</code> folder into that tool's skills directory (many use <code>~/.agents/skills/</code>). Check the tool's docs for the exact path.</p>
+      </section>
+      <section class="step">
+        <div class="step-head"><span class="num">5</span><h2>ChatGPT or Gemini (no skill support)</h2></div>
+        <ul class="tips"><li>Create a Custom GPT, Gem or Project.</li><li>Paste the contents of <a class="inline" href="${dir}/SKILL.md" target="_blank" rel="noopener">SKILL.md</a> into its instructions.</li><li>Upload the four files from <code>references/</code> as knowledge files.</li></ul>
+      </section>
+
+      <h2>How to use it</h2>
+      <p class="lead">Just describe the video. Mention the skill by name if your assistant doesn't pick it up on its own.</p>
+      ${cmd("Quick idea", "Use the video-prompt-director skill: a 30s cinematic chase of a detective and a thief across Mumbai rooftops at dusk, 9:16, Fincher style.")}
+      ${cmd("UGC ad", "Make me UGC prompts for a 20-second TikTok ad for a matte black insulated water bottle. The creator is a gym-going woman in her twenties, talking to camera.")}
+      ${cmd("Stylized animation", "Plan a 15-second Arcane x Spider-Verse style animation of a girl on a hoverboard escaping drones through a floating market. SFX only, 16:9.")}
+
+      <h2>What you get back</h2>
+      <ul>
+        <li>A title and a one-line plan of how the video is split into generations.</li>
+        <li>Numbered steps, each with one tool, why it was picked, and full prompts ready to paste.</li>
+        <li>Character and prop sheet prompts first, so everything stays consistent across clips.</li>
+        <li>Video prompts in the 5-block structure with timecoded beats, audio rules and an avoid list.</li>
+        <li>A finishing note for upscaling and editing.</li>
+      </ul>
+
+      <h2>Keeping it in sync</h2>
+      <p class="tips">The reference files are generated from this guide's <code>data.js</code>. After editing the guide, rebuild the skill and the zip:</p>
+      ${cmd("Rebuild", "node skills/build.js")}`;
+        },
+
+        finishing() {
+          const t = DATA.topaz;
+          return `
+      <h1>Finishing in Topaz</h1>
+      <p class="lead"><a href="https://www.topazlabs.com/topaz-video" target="_blank" rel="noopener">Topaz Video</a> (formerly Topaz Video AI) is a paid desktop app from Topaz Labs that uses AI to upscale video (e.g. 720p → 1080p/4K) and interpolate frames for smoother motion. Generate at 720p to save cost, then upscale and smooth here. These settings are tuned for Instagram reels.</p>
+      ${fig("topazFlow")}
+      <h2>Enhancement</h2>${table(t.enhancement, ["Setting", "Value"])}
+      <h2>Frame interpolation</h2>${table(t.interpolation, ["Setting", "Value"])}
+      <h2>Notes</h2><ul>${t.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
+        },
+      };
+
+      const refs = [
+        ["models", "Model directory"],
+        ["vocab", "Prompt vocabulary"],
+        ["templates", "Templates"],
+        ["finishing", "Finishing (Topaz)"],
+      ];
+
+      function renderNav(page, hash) {
+        const cur = (h, v = "page") => (h === hash ? ` aria-current="${v}"` : "");
+        $nav.innerHTML = `
+  <div class="brand">Video Gen Guide<small>Models, workflows &amp; prompts</small></div>
+  <a href="#home"${cur("home")}>Start here</a>
+  <a href="#builder" class="nav-cta"${cur("builder")}>Prompt builder<span class="nav-badge">AI</span></a>
+  <a href="#skill"${cur("skill")}>Agent skill</a>
+  <div class="nav-label">Workflows</div>
+  ${DATA.categories
+    .map(
+      (c, i) =>
+        `<a href="#${c.id}"${page === c.id ? ' aria-current="page"' : ""}><span class="nav-num">${String(i + 1).padStart(2, "0")}</span>${esc(c.name)}</a>` +
+        (page === c.id
+          ? `<div class="nav-sub">${c.steps.map((s, j) => `<a href="#${c.id}-${j + 1}"${cur(`${c.id}-${j + 1}`, "step")}>${esc(s.title)}</a>`).join("")}</div>`
+          : ""),
+    )
+    .join("")}
+  <div class="nav-label">Reference</div>
+  ${refs.map(([id, n]) => `<a href="#${id}"${cur(id)}>${n}</a>`).join("")}`;
+      }
+
+      let page = null;
+      function route() {
+        const hash = location.hash.slice(1) || "home";
+        const m = hash.match(/^(.+)-(\d+)$/);
+        const id = m && DATA.categories.some((c) => c.id === m[1]) ? m[1] : hash;
+        if (id !== page) {
+          page = id;
+          const cat = DATA.categories.find((c) => c.id === id);
+          copyBuf.length = 0;
+          $app.innerHTML = cat ? pages.category(cat) : (pages[id] || pages.home)();
+          if (id === "builder") BUILDER.mount();
+          window.scrollTo(0, 0);
+          $app.focus({ preventScroll: true });
+        }
+        renderNav(id, hash);
+        if (m) document.getElementById(hash)?.scrollIntoView();
+      }
+
+      async function copy(text, el) {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const ta = Object.assign(document.createElement("textarea"), {
+            value: text,
+          });
+          document.body.append(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+        const old = el.textContent;
+        el.classList.add("done");
+        if (el.tagName === "BUTTON") el.textContent = "Copied";
+        setTimeout(() => {
+          el.classList.remove("done");
+          if (el.tagName === "BUTTON") el.textContent = old;
+        }, 1200);
+      }
+
+      $app.addEventListener("click", (e) => {
+        const b = e.target.closest("button.copy");
+        if (b) return copy(copyBuf[b.dataset.i], b);
+        const t = e.target.closest("td.term");
+        if (t) copy(t.dataset.copy, t);
+      });
+
+      window.addEventListener("hashchange", route);
+      route();
+    </script>
+  </body>
+</html>
