@@ -11,9 +11,9 @@ pnpm dev
 
 Open http://localhost:3000.
 
-## Gemini key (prompt builder)
+## Gemini key (prompt builder and Try now)
 
-Copy `.env.example` to `.env.local` and set `GEMINI_API_KEY`. Without it, visitors can paste their own key on the builder page (stored only in their browser).
+Copy `.env.example` to `.env.local` and set `GEMINI_API_KEY`. Without it, visitors add their own key under "Gemini key" in the sidebar (stored only in their browser). Every prompt block has a Try now panel that runs the prompt as text or renders it as an image with that key.
 
 ## Agent skill
 

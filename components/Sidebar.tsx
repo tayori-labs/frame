@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { openKeyDialog, statusLabel, useGeminiKey } from "@/lib/geminiKey";
 
 const REFS = [
   ["/models", "Model directory"],
@@ -15,6 +16,7 @@ export type NavWorkflow = { id: string; name: string; steps: string[] };
 
 export default function Sidebar({ workflows }: { workflows: NavWorkflow[] }) {
   const path = usePathname();
+  const key = useGeminiKey();
   const [hash, setHash] = useState("");
   useEffect(() => {
     const sync = () => setHash(window.location.hash);
@@ -38,6 +40,11 @@ export default function Sidebar({ workflows }: { workflows: NavWorkflow[] }) {
         Prompt builder<span className="nav-badge">AI</span>
       </Link>
       <Link href="/skill" aria-current={cur("/skill")}>Agent skill</Link>
+      <button type="button" className="nav-key" onClick={openKeyDialog}>
+        Gemini key
+        <span className={`dot status-${key.status}`} aria-hidden="true" />
+        <span className="nav-key-status">{statusLabel(key)}</span>
+      </button>
 
       <div className="nav-label">Workflows</div>
       {workflows.map((w, i) => {

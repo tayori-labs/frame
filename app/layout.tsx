@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import KeyDialog from "@/components/KeyDialog";
 import { DATA } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </footer>
           </main>
         </div>
+        <KeyDialog />
       </body>
     </html>
   );

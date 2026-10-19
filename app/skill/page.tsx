@@ -59,15 +59,15 @@ export default function Skill() {
           Installs straight from the GitHub repo into Claude Code, Cursor, Codex and other agents that support Agent Skills. It asks which agents to install for and
           whether to install globally or for the current project.
         </p>
-        <PromptBlock label="Install" text="npx skills add tayori-labs/frame" />
-        <PromptBlock label="Install globally, no prompts" text="npx skills add tayori-labs/frame -g -y" />
+        <PromptBlock tryMode={false} label="Install" text="npx skills add tayori-labs/frame" />
+        <PromptBlock tryMode={false} label="Install globally, no prompts" text="npx skills add tayori-labs/frame -g -y" />
         <p className="tips">Prefer doing it by hand? Download the zip above and follow the steps for your tool below.</p>
       </section>
       <section className="step">
         <StepHead n={2} title="Claude Code" />
         <p className="tips">Unzip into your personal skills folder (all projects) or a project&apos;s <code>.claude/skills</code> folder, then start a new session.</p>
-        <PromptBlock label="Personal (all projects)" text="unzip video-prompt-director.zip -d ~/.claude/skills/" />
-        <PromptBlock label="This project only" text="unzip video-prompt-director.zip -d .claude/skills/" />
+        <PromptBlock tryMode={false} label="Personal (all projects)" text="unzip video-prompt-director.zip -d ~/.claude/skills/" />
+        <PromptBlock tryMode={false} label="This project only" text="unzip video-prompt-director.zip -d .claude/skills/" />
       </section>
       <section className="step">
         <StepHead n={3} title="Claude app (web & desktop)" />
@@ -80,8 +80,8 @@ export default function Skill() {
       <section className="step">
         <StepHead n={4} title="Cursor" />
         <p className="tips">Unzip into your personal or project skills folder, then open a new chat.</p>
-        <PromptBlock label="Personal (all projects)" text="unzip video-prompt-director.zip -d ~/.cursor/skills/" />
-        <PromptBlock label="This project only" text="unzip video-prompt-director.zip -d .cursor/skills/" />
+        <PromptBlock tryMode={false} label="Personal (all projects)" text="unzip video-prompt-director.zip -d ~/.cursor/skills/" />
+        <PromptBlock tryMode={false} label="This project only" text="unzip video-prompt-director.zip -d .cursor/skills/" />
       </section>
       <section className="step">
         <StepHead n={5} title="Other agents" />
@@ -101,7 +101,7 @@ export default function Skill() {
 
       <h2>How to use it</h2>
       <p className="lead">Just describe the video. Mention the skill by name if your assistant doesn&apos;t pick it up on its own.</p>
-      {EXAMPLES.map(([label, text]) => <PromptBlock key={label} label={label} text={text} />)}
+      {EXAMPLES.map(([label, text]) => <PromptBlock tryMode={false} key={label} label={label} text={text} />)}
 
       <h2>What you get back</h2>
       <ul>
@@ -114,7 +114,7 @@ export default function Skill() {
 
       <h2>Keeping it in sync</h2>
       <p className="tips">The reference files are generated from this site&apos;s <code>lib/data.ts</code>. After editing it, rebuild the skill and the zip:</p>
-      <PromptBlock label="Rebuild" text="pnpm build:skill" />
+      <PromptBlock tryMode={false} label="Rebuild" text="pnpm build:skill" />
     </>
   );
 }

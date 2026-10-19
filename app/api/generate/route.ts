@@ -5,7 +5,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const key = resolveKey(req.headers.get("x-user-key"));
-    if (!key) return Response.json({ error: "No Gemini API key. Add one in the settings above." }, { status: 400 });
+    if (!key) return Response.json({ error: "No Gemini API key. Add one under Gemini key in the sidebar." }, { status: 400 });
     const plan = await generatePlan(key, body.model || DEFAULT_MODEL, buildBrief(validateForm(body.form)));
     return Response.json({ plan });
   } catch (e) {

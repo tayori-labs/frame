@@ -1,9 +1,11 @@
 const API = "https://generativelanguage.googleapis.com/v1beta";
 export const DEFAULT_MODEL = "gemini-2.5-flash";
+export const DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image";
+export const ASPECTS = ["16:9", "9:16", "1:1", "4:5", "3:2", "2:3"];
 
 export type PlanStep = { title: string; tool: string; why: string; prompts: { label: string; text: string }[]; tips?: string[] };
 export type Plan = { title: string; summary: string; steps: PlanStep[] };
-type Part = { text?: string; thought?: boolean };
+type Part = { text?: string; thought?: boolean; inlineData?: { mimeType: string; data: string } };
 
 // Server key wins; a visitor-supplied key is only used when none is configured.
 export const resolveKey = (userKey?: string | null) => process.env.GEMINI_API_KEY || (userKey || "").trim();
@@ -15,13 +17,46 @@ async function call(path: string, key: string, init: RequestInit = {}) {
   return d;
 }
 
-export async function listModels(key: string): Promise<string[]> {
+export async function listModels(key: string): Promise<{ text: string[]; image: string[] }> {
   const d = await call("/models?pageSize=200", key);
-  return d.models
-    .filter((m: { name: string; supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes("generateContent") && /gemini/.test(m.name) && !/embed|tts|image|audio|live|vision/.test(m.name))
+  const names: string[] = d.models
+    .filter((m: { name: string; supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes("generateContent") && /gemini/.test(m.name) && !/embed|tts|audio|live|vision/.test(m.name))
     .map((m: { name: string }) => m.name.replace("models/", ""))
     .sort()
     .reverse();
+  return { text: names.filter((n) => !/image/.test(n)), image: names.filter((n) => /image/.test(n)) };
+}
+
+async function generate(key: string, model: string, body: object): Promise<Part[]> {
+  if (!/^[\w.-]+$/.test(model)) throw new Error("Invalid model name");
+  const d = await call(`/models/${model}:generateContent`, key, { method: "POST", body: JSON.stringify(body) });
+  const parts: Part[] = (d.candidates?.[0]?.content?.parts || []).filter((p: Part) => !p.thought);
+  if (!parts.length) {
+    const reason = d.promptFeedback?.blockReason || d.candidates?.[0]?.finishReason;
+    throw new Error(reason ? `No output (${reason})` : "Empty response, try again.");
+  }
+  return parts;
+}
+
+const textOf = (parts: Part[]) => parts.map((p) => p.text || "").join("");
+
+export type TryResult = { text: string; images: string[] };
+
+// Runs a single guide prompt as-is: text mode answers it, image mode renders it.
+export async function tryPrompt(key: string, input: unknown): Promise<TryResult> {
+  const { mode, prompt, model, aspectRatio } = (input ?? {}) as Record<string, unknown>;
+  if (mode !== "text" && mode !== "image") throw new Error("Invalid mode");
+  if (typeof prompt !== "string" || !prompt.trim()) throw new Error("Write a prompt first");
+  if (prompt.length > 10000) throw new Error("Prompt is too long (max 10000 characters)");
+  const image = mode === "image";
+  if (image && !ASPECTS.includes(aspectRatio as string)) throw new Error("Invalid aspect ratio");
+  const parts = await generate(key, typeof model === "string" && model ? model : image ? DEFAULT_IMAGE_MODEL : DEFAULT_MODEL, {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: image ? { responseModalities: ["TEXT", "IMAGE"], imageConfig: { aspectRatio } } : { temperature: 0.8 },
+  });
+  const images = parts.filter((p) => p.inlineData).map((p) => `data:${p.inlineData!.mimeType};base64,${p.inlineData!.data}`);
+  if (image && !images.length) throw new Error(textOf(parts) || "The model returned no image. Try rephrasing the prompt.");
+  return { text: textOf(parts), images };
 }
 
 const SCHEMA = {
@@ -51,16 +86,10 @@ const SCHEMA = {
 };
 
 export async function generatePlan(key: string, model: string, { system, user }: { system: string; user: string }): Promise<Plan> {
-  if (!/^[\w.-]+$/.test(model)) throw new Error("Invalid model name");
-  const d = await call(`/models/${model}:generateContent`, key, {
-    method: "POST",
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: user }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.8 },
-    }),
+  const parts = await generate(key, model, {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts: [{ text: user }] }],
+    generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.8 },
   });
-  const text = (d.candidates?.[0]?.content?.parts || []).filter((p: Part) => !p.thought).map((p: Part) => p.text || "").join("");
-  if (!text) throw new Error(d.promptFeedback?.blockReason ? `Blocked (${d.promptFeedback.blockReason})` : "Empty response, try again.");
-  return JSON.parse(text);
+  return JSON.parse(textOf(parts));
 }

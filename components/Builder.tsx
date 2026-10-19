@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { authHeaders, openKeyDialog, statusLabel, useGeminiKey } from "@/lib/geminiKey";
 import { DATA } from "@/lib/data";
 import { buildBrief, DEFAULT_FORM, FIELDS, validateForm, type Form } from "@/lib/brief";
 import type { Plan } from "@/lib/gemini";
 import CopyButton from "./CopyButton";
 import { List, Model, PromptBlock, StepHead } from "./ui";
 
-const KEY = "vg-gemini-key", MODEL = "vg-gemini-model", FORM = "vg-builder-form";
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const FORM = "vg-builder-form";
 const LABELS: Partial<Record<keyof typeof FIELDS, (v: string) => string>> = {
   duration: (v) => `${v} seconds`,
   ratio: (v) => ({ "9:16": "9:16 vertical", "16:9": "16:9 widescreen", "1:1": "1:1 square", "4:5": "4:5 feed" } as Record<string, string>)[v],
@@ -17,46 +17,14 @@ const msg = (e: unknown) => (e as Error).message;
 
 export default function Builder() {
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
-  const [key, setKey] = useState("");
-  const [model, setModel] = useState(DEFAULT_MODEL);
-  const [models, setModels] = useState<string[]>([]);
-  const [status, setStatus] = useState("");
-  const [serverKey, setServerKey] = useState(false);
+  const key = useGeminiKey();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [plan, setPlan] = useState(lastPlan);
-  const settings = useRef<HTMLDetailsElement>(null);
   const result = useRef<HTMLDivElement>(null);
 
-  async function loadModels(k: string) {
-    setStatus("Checking...");
-    try {
-      const r = await fetch("/api/models", { headers: k ? { "x-user-key": k } : {} });
-      const d = await r.json();
-      setServerKey(d.serverKey);
-      if (d.error) throw new Error(d.error);
-      if (!d.models.length) return setStatus("Not set"), false;
-      const saved = localStorage.getItem(MODEL);
-      const pick = d.models.includes(saved) ? saved : d.models.find((n: string) => /flash/.test(n) && !/lite|preview|exp/.test(n)) || d.models[0];
-      setModels(d.models);
-      setModel(pick);
-      localStorage.setItem(MODEL, pick);
-      setStatus(d.serverKey ? "Server key" : "Connected");
-      return true;
-    } catch (e) {
-      setStatus("Key error");
-      setError(msg(e));
-    }
-  }
-
   useEffect(() => {
-    const k = localStorage.getItem(KEY) || "";
     setForm((f) => ({ ...f, ...JSON.parse(localStorage.getItem(FORM) || "{}") }));
-    setKey(k);
-    setModel(localStorage.getItem(MODEL) || DEFAULT_MODEL);
-    loadModels(k).then((ok) => {
-      if (!ok && settings.current) settings.current.open = true;
-    });
   }, []);
 
   const set = (k: keyof Form) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -64,13 +32,6 @@ export default function Builder() {
     setForm(next);
     localStorage.setItem(FORM, JSON.stringify(next));
   };
-
-  function saveKey() {
-    const k = key.trim();
-    localStorage.setItem(KEY, k);
-    setError("");
-    loadModels(k);
-  }
 
   function briefText() {
     try {
@@ -91,16 +52,16 @@ export default function Builder() {
     } catch (err) {
       return setError(msg(err));
     }
-    if (!serverKey && !key.trim()) {
-      if (settings.current) settings.current.open = true;
-      return setError('Add your Gemini API key above, or use "Copy brief" to paste the request into any chatbot.');
+    if (key.status !== "ready") {
+      openKeyDialog();
+      return setError('Connect a Gemini API key first, or use "Copy brief" to paste the request into any chatbot.');
     }
     setBusy(true);
     try {
       const r = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(key.trim() ? { "x-user-key": key.trim() } : {}) },
-        body: JSON.stringify({ form, model }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ form, model: key.model }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
@@ -131,28 +92,15 @@ export default function Builder() {
 
   return (
     <>
-      <details className="settings" ref={settings}>
-        <summary>
-          Gemini API key {status && <span className="pill">{status}</span>}
-        </summary>
-        <div className="form-grid">
-          <label className="field">
-            <span>{serverKey ? "Your own key (optional, used only if the server has none)" : "API key"}</span>
-            <input type="password" autoComplete="off" spellCheck={false} placeholder="Paste your key" value={key} onChange={(e) => setKey(e.target.value)} onBlur={saveKey} />
-          </label>
-          <label className="field">
-            <span>Model</span>
-            <select value={model} onChange={(e) => { setModel(e.target.value); localStorage.setItem(MODEL, e.target.value); }}>
-              {(models.length ? models : [model]).map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </label>
-        </div>
-        <p className="hint">
-          {serverKey ? "This site has a Gemini key configured, so you can generate right away. " : ""}
-          Get a free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>. Your key is saved only in this browser and
-          sent with your requests to Google through this site. No key? Use &quot;Copy brief&quot; and paste it into any chatbot.
-        </p>
-      </details>
+      <div className="settings key-row">
+        <span>
+          Gemini <span className={`pill status-${key.status}`}>{statusLabel(key)}</span>
+          {key.status === "ready" && <code>{key.model}</code>}
+        </span>
+        <button type="button" className="btn" onClick={openKeyDialog}>
+          {key.status === "ready" ? "Change key or model" : "Set up Gemini key"}
+        </button>
+      </div>
 
       <form className="builder" onSubmit={generate} noValidate>
         <fieldset>
