@@ -1,9 +1,9 @@
-// Regenerates the skill's reference files from ../data.js and zips the skill.
+// Regenerates the skill's reference files from lib/data.js and zips the skill.
 // Usage: node skills/build.js
 const fs = require("fs"), path = require("path"), vm = require("vm"), { execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
-const DATA = vm.runInNewContext(fs.readFileSync(path.join(root, "data.js"), "utf8") + "\n;DATA");
+const DATA = vm.runInNewContext(fs.readFileSync(path.join(root, "lib", "data.js"), "utf8").replace(/^export /m, "") + "\n;DATA");
 const skill = path.join(__dirname, "video-prompt-director");
 const out = (name, text) => fs.writeFileSync(path.join(skill, "references", name), text.trim() + "\n");
 fs.mkdirSync(path.join(skill, "references"), { recursive: true });
@@ -79,7 +79,7 @@ ${t.interpolation.map(([k, x]) => `- ${k}: ${x}`).join("\n")}
 
 ${t.notes.map(n => `- ${n}`).join("\n")}`);
 
-const zip = path.join(__dirname, "video-prompt-director.zip");
+const zip = path.join(root, "public", "video-prompt-director.zip");
 fs.rmSync(zip, { force: true });
 execFileSync("zip", ["-rq", zip, "video-prompt-director", "-x", "*.DS_Store"], { cwd: __dirname });
 console.log("Built references and", path.relative(root, zip));

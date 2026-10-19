@@ -1,0 +1,16 @@
+{
+  "name": "frame",
+  "private": true,
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "node skills/build.js && next dev",
+    "build": "node skills/build.js && next build",
+    "start": "next start",
+    "build:skill": "node skills/build.js"
+  },
+  "dependencies": {
+    "next": "^16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}
