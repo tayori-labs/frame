@@ -1,16 +1,18 @@
-import { DATA } from "@/lib/data";
+import type { CSSProperties, ReactNode } from "react";
+import { DATA, type Pair, type PartKey } from "@/lib/data";
+import type { DiagramName } from "@/lib/diagrams";
 import { Diagram, PromptBlock, Table } from "@/components/ui";
 
 export const metadata = { title: "Prompt vocabulary" };
 
-const Part = ({ k, children }) => {
+const Part = ({ k, children }: { k: PartKey; children: ReactNode }) => {
   const [name, color] = DATA.promptParts[k];
-  return <span className="pp" style={{ "--c": color }} title={name}>{children}</span>;
+  return <span className="pp" style={{ "--c": color } as CSSProperties} title={name}>{children}</span>;
 };
 
 export default function Vocab() {
   const v = DATA.vocab;
-  const term = (title, rows, head = "The look it gives", diagram) => (
+  const term = (title: string, rows: Pair[], head = "The look it gives", diagram?: DiagramName) => (
     <>
       <h2>{title}</h2>
       <Diagram name={diagram} />
@@ -26,7 +28,7 @@ export default function Vocab() {
       <h2>Full examples</h2>
       <p className="lead">Every example uses the same order. Swap one coloured part to change one dial.</p>
       <div className="legend">
-        {Object.entries(DATA.promptParts).map(([k, [name]]) => <Part key={k} k={k}>{name}</Part>)}
+        {(Object.keys(DATA.promptParts) as PartKey[]).map((k) => <Part key={k} k={k}>{DATA.promptParts[k][0]}</Part>)}
       </div>
       {DATA.vocabExamples.map(([label, parts]) => (
         <PromptBlock key={label} label={label} text={parts.map((p) => p[1]).join(" ")}>

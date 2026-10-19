@@ -11,7 +11,9 @@ const REFS = [
   ["/finishing", "Finishing (Topaz)"],
 ];
 
-export default function Sidebar({ workflows }) {
+export type NavWorkflow = { id: string; name: string; steps: string[] };
+
+export default function Sidebar({ workflows }: { workflows: NavWorkflow[] }) {
   const path = usePathname();
   const [hash, setHash] = useState("");
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function Sidebar({ workflows }) {
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, [path]);
-  const cur = (href) => (path === href ? "page" : undefined);
+  const cur = (href: string) => (path === href ? "page" : undefined);
 
   return (
     <nav aria-label="Guide sections">

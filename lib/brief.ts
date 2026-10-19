@@ -12,22 +12,24 @@ export const FIELDS = {
   lighting: ["", ...DATA.vocab.lighting.map(([t]) => t)],
 };
 const TEXT_LIMITS = { idea: 2000, assets: 1500, notes: 1000 };
+export type Form = Record<keyof typeof FIELDS | keyof typeof TEXT_LIMITS, string>;
 
 export const DEFAULT_FORM = Object.fromEntries([
   ...Object.entries(FIELDS).map(([k, v]) => [k, k === "duration" ? "15" : v[0]]),
   ...Object.keys(TEXT_LIMITS).map((k) => [k, ""]),
-]);
+]) as Form;
 
 // Returns a clean form object or throws with a user-facing message.
-export function validateForm(input) {
-  const f = {};
-  for (const [k, allowed] of Object.entries(FIELDS)) {
-    const v = String(input?.[k] ?? "");
+export function validateForm(input: unknown): Form {
+  const src = (input ?? {}) as Record<string, unknown>;
+  const f = {} as Form;
+  for (const [k, allowed] of Object.entries(FIELDS) as [keyof typeof FIELDS, string[]][]) {
+    const v = String(src[k] ?? "");
     if (!allowed.includes(v)) throw new Error(`Invalid value for ${k}`);
     f[k] = v;
   }
-  for (const [k, max] of Object.entries(TEXT_LIMITS)) {
-    const v = String(input?.[k] ?? "").trim();
+  for (const [k, max] of Object.entries(TEXT_LIMITS) as [keyof typeof TEXT_LIMITS, number][]) {
+    const v = String(src[k] ?? "").trim();
     if (v.length > max) throw new Error(`${k} is too long (max ${max} characters)`);
     f[k] = v;
   }
@@ -35,11 +37,11 @@ export function validateForm(input) {
   return f;
 }
 
-export function buildBrief(f) {
-  const c = DATA.categories.find((x) => x.id === f.type);
+export function buildBrief(f: Form) {
+  const c = DATA.categories.find((x) => x.id === f.type)!;
   const m = DATA.models;
-  const list = (rows) => rows.map(([n, w, cost]) => `- ${n}: ${w}${cost ? ` (${cost})` : ""}`).join("\n");
-  const tools = (xs) => xs.map(([n, w]) => `${n} (${w})`).join("; ");
+  const list = (rows: string[][]) => rows.map(([n, w, cost]) => `- ${n}: ${w}${cost ? ` (${cost})` : ""}`).join("\n");
+  const tools = (xs: [string, string][]) => xs.map(([n, w]) => `${n} (${w})`).join("; ");
   const steps = c.steps
     .map((s, i) =>
       [

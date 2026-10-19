@@ -17,4 +17,10 @@ Copy `.env.example` to `.env.local` and set `GEMINI_API_KEY`. Without it, visito
 
 ## Agent skill
 
-`skills/video-prompt-director` is generated from `lib/data.js`. `pnpm build:skill` regenerates its references and `public/video-prompt-director.zip` (also run automatically by `dev` and `build`).
+`.agents/skills/video-prompt-director` is generated from `lib/data.ts`. `pnpm build:skill` regenerates its references and `public/video-prompt-director.zip` (also run automatically by `dev` and `build`).
+
+Install it into any agent straight from this repo:
+
+```
+npx skills add tayori-labs/frame
+```

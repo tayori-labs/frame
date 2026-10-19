@@ -1,3 +1,23 @@
+import type { DiagramName } from "./diagrams";
+
+export type Pair = [string, string];
+export type ModelRef = Pair;
+export type Prompt = { label: string; text: string };
+export type Step = { title: string; diagram?: DiagramName; req: string[]; models: ModelRef[]; alt: ModelRef[]; tips: string[]; prompts: Prompt[] };
+export type Category = { id: string; name: string; tagline: string; specs: string; steps: Step[] };
+export type PartKey = "camera" | "lens" | "director" | "shot" | "subject" | "lighting" | "palette";
+export type VocabKey = "camera" | "lens" | "director" | "lighting" | "shots" | "angles" | "moves";
+export type Data = {
+  rules: Pair[];
+  categories: Category[];
+  models: { image: Pair[]; video: [string, string, string][]; other: Pair[]; more: Pair[] };
+  vocab: Record<VocabKey, Pair[]>;
+  promptParts: Record<PartKey, [name: string, color: string]>;
+  vocabExamples: [string, [PartKey, string][]][];
+  templates: [label: string, text: string, diagram?: DiagramName][];
+  topaz: { enhancement: Pair[]; interpolation: Pair[]; notes: string[] };
+};
+
 // Model tuple: [name, why]
 // Placeholders inside prompts use {curly braces} and are highlighted in the UI.
 
@@ -41,7 +61,7 @@ Strictly avoid: {animation / live-action}, {3D CG render look}, additional chara
 
 const SPEED_RAMP = `[Your scene plays out at normal speed] ... just as [THE EXACT TRIGGER MOMENT], the speed dramatically ramps to [X]% slow motion, [CAMERA MOTION that sells the beat] ... then the speed ramps back to normal [as the action continues].`;
 
-export const DATA = {
+export const DATA: Data = {
   rules: [
     ["Your input frame decides everything", "A strong reference image (character sheet, location, hero frame) matters more than a long prompt."],
     ["Match the model to the task", "Never use one model for everything — realism, text, editing and motion each have a best tool."],
@@ -92,7 +112,7 @@ Idea: {e.g. a street racer is hunted by a police chopper across a neon cyberpunk
           diagram: "propSheet",
           req: ["Location: wide, readable lighting", "Props/vehicles: 2-panel sheet on grey"],
           models: [["Midjourney V8.1 / V7 (raw)", "Same style snippet keeps everything coherent"]],
-          alt: [["Seedream 5.0", "Good colour combinations", false], ["Nano Banana Pro/2", "Insert or fix elements"]],
+          alt: [["Seedream 5.0", "Good colour combinations"], ["Nano Banana Pro/2", "Insert or fix elements"]],
           tips: ["Use the location snippet (no character-sheet wording) for environments."],
           prompts: [
             { label: "Location", text: `{Neon-noir cyberpunk skyline at night, towering skyscrapers with cyan, magenta and red signage, a glowing red emblem, a wide bridge spanning toward the city}, ${STYLE_SNIPPET_LOC} --ar 16:9 --style raw` },
@@ -217,7 +237,7 @@ Then list every character and prop that needs its own reference sheet.`
           diagram: "charSheet",
           req: ["16:9 three-panel sheet per character", "Grey background", "Face erased on front full-body panel", "2-panel sheet per prop"],
           models: [["Soul 2.0", "Realistic character sheets"], ["Nano Banana Pro/2", "Surgical fixes, outfit swaps, face erase"]],
-          alt: [["GPT 2.0", "General editing"], ["Photoshop / any editor", "Grey brush over the full-body face", false]],
+          alt: [["GPT 2.0", "General editing"], ["Photoshop / any editor", "Grey brush over the full-body face"]],
           tips: ["White backgrounds blow out skin — grey gives natural tones and real shadows.", "Same-size panels only; random layouts make the face get averaged and drift."],
           prompts: [
             { label: "Character sheet", text: CHARACTER_SHEET.replace("{subject description only}", "{Photorealistic: pale woman, large solid black eyes, extremely long straight platinum blonde hair, dark iridescent metallic green turtleneck bodysuit, gold chain belt, hot pink spiked boots}") },

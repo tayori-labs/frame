@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import CopyButton from "./CopyButton";
-import { DIAGRAMS } from "@/lib/diagrams";
+import { DIAGRAMS, type DiagramName } from "@/lib/diagrams";
 
-export const Highlight = ({ text }) => text.split(/(\{[^}]+\})/).map((p, i) => (i % 2 ? <mark key={i}>{p}</mark> : p));
+export const Highlight = ({ text }: { text: string }) => text.split(/(\{[^}]+\})/).map((p, i) => (i % 2 ? <mark key={i}>{p}</mark> : p));
 
-export function PromptBlock({ label, text, children }) {
+export function PromptBlock({ label, text, children }: { label: string; text: string; children?: ReactNode }) {
   return (
     <div className="prompt">
       <div className="prompt-head">
@@ -15,17 +16,17 @@ export function PromptBlock({ label, text, children }) {
   );
 }
 
-// Diagram markup is static, ASCII-only SVG authored in lib/diagrams.js.
-export const Diagram = ({ name }) => (name ? <figure className="diagram" dangerouslySetInnerHTML={{ __html: DIAGRAMS[name] }} /> : null);
+// Diagram markup is static, ASCII-only SVG authored in lib/diagrams.ts.
+export const Diagram = ({ name }: { name?: DiagramName }) => (name ? <figure className="diagram" dangerouslySetInnerHTML={{ __html: DIAGRAMS[name] }} /> : null);
 
-export const Model = ({ m: [name, why], alt }) => (
+export const Model = ({ m: [name, why], alt }: { m: [string, string]; alt?: boolean }) => (
   <div className={`model${alt ? " alt" : ""}`}>
     <b>{name}</b>
     {why && <span>{why}</span>}
   </div>
 );
 
-export function Table({ heads, rows, copyFirst }) {
+export function Table({ heads, rows, copyFirst }: { heads: string[]; rows: string[][]; copyFirst?: boolean }) {
   return (
     <table>
       <thead>
@@ -44,7 +45,7 @@ export function Table({ heads, rows, copyFirst }) {
   );
 }
 
-export function StepHead({ n, title }) {
+export function StepHead({ n, title }: { n: number; title: string }) {
   return (
     <div className="step-head">
       <span className="num">{n}</span>
@@ -53,7 +54,7 @@ export function StepHead({ n, title }) {
   );
 }
 
-export const List = ({ items, className }) => (
+export const List = ({ items, className }: { items: string[]; className?: string }) => (
   <ul className={className}>
     {items.map((x) => <li key={x}>{x}</li>)}
   </ul>

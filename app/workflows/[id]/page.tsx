@@ -2,16 +2,18 @@ import { notFound } from "next/navigation";
 import { DATA } from "@/lib/data";
 import { Diagram, List, Model, PromptBlock, StepHead } from "@/components/ui";
 
-const find = (id) => DATA.categories.find((c) => c.id === id);
+type Props = { params: Promise<{ id: string }> };
+
+const find = (id: string) => DATA.categories.find((c) => c.id === id);
 
 export const dynamicParams = false;
 export const generateStaticParams = () => DATA.categories.map((c) => ({ id: c.id }));
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params }: Props) {
   return { title: find((await params).id)?.name };
 }
 
-export default async function Workflow({ params }) {
+export default async function Workflow({ params }: Props) {
   const c = find((await params).id);
   if (!c) notFound();
   return (

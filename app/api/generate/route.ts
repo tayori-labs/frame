@@ -1,7 +1,7 @@
 import { buildBrief, validateForm } from "@/lib/brief";
 import { DEFAULT_MODEL, generatePlan, resolveKey } from "@/lib/gemini";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const key = resolveKey(req.headers.get("x-user-key"));
@@ -9,6 +9,6 @@ export async function POST(req) {
     const plan = await generatePlan(key, body.model || DEFAULT_MODEL, buildBrief(validateForm(body.form)));
     return Response.json({ plan });
   } catch (e) {
-    return Response.json({ error: e.message }, { status: 400 });
+    return Response.json({ error: (e as Error).message }, { status: 400 });
   }
 }

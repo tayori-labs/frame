@@ -1,32 +1,34 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { DATA } from "@/lib/data";
-import { buildBrief, DEFAULT_FORM, FIELDS, validateForm } from "@/lib/brief";
+import { buildBrief, DEFAULT_FORM, FIELDS, validateForm, type Form } from "@/lib/brief";
+import type { Plan } from "@/lib/gemini";
 import CopyButton from "./CopyButton";
 import { List, Model, PromptBlock, StepHead } from "./ui";
 
 const KEY = "vg-gemini-key", MODEL = "vg-gemini-model", FORM = "vg-builder-form";
 const DEFAULT_MODEL = "gemini-2.5-flash";
-const LABELS = {
+const LABELS: Partial<Record<keyof typeof FIELDS, (v: string) => string>> = {
   duration: (v) => `${v} seconds`,
-  ratio: (v) => ({ "9:16": "9:16 vertical", "16:9": "16:9 widescreen", "1:1": "1:1 square", "4:5": "4:5 feed" })[v],
+  ratio: (v) => ({ "9:16": "9:16 vertical", "16:9": "16:9 widescreen", "1:1": "1:1 square", "4:5": "4:5 feed" } as Record<string, string>)[v],
 };
-let lastPlan = null;
+let lastPlan: Plan | null = null;
+const msg = (e: unknown) => (e as Error).message;
 
 export default function Builder() {
-  const [form, setForm] = useState(DEFAULT_FORM);
+  const [form, setForm] = useState<Form>(DEFAULT_FORM);
   const [key, setKey] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
-  const [models, setModels] = useState([]);
+  const [models, setModels] = useState<string[]>([]);
   const [status, setStatus] = useState("");
   const [serverKey, setServerKey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [plan, setPlan] = useState(lastPlan);
-  const settings = useRef(null);
-  const result = useRef(null);
+  const settings = useRef<HTMLDetailsElement>(null);
+  const result = useRef<HTMLDivElement>(null);
 
-  async function loadModels(k) {
+  async function loadModels(k: string) {
     setStatus("Checking...");
     try {
       const r = await fetch("/api/models", { headers: k ? { "x-user-key": k } : {} });
@@ -35,7 +37,7 @@ export default function Builder() {
       if (d.error) throw new Error(d.error);
       if (!d.models.length) return setStatus("Not set"), false;
       const saved = localStorage.getItem(MODEL);
-      const pick = d.models.includes(saved) ? saved : d.models.find((n) => /flash/.test(n) && !/lite|preview|exp/.test(n)) || d.models[0];
+      const pick = d.models.includes(saved) ? saved : d.models.find((n: string) => /flash/.test(n) && !/lite|preview|exp/.test(n)) || d.models[0];
       setModels(d.models);
       setModel(pick);
       localStorage.setItem(MODEL, pick);
@@ -43,7 +45,7 @@ export default function Builder() {
       return true;
     } catch (e) {
       setStatus("Key error");
-      setError(e.message);
+      setError(msg(e));
     }
   }
 
@@ -57,7 +59,7 @@ export default function Builder() {
     });
   }, []);
 
-  const set = (k) => (e) => {
+  const set = (k: keyof Form) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const next = { ...form, [k]: e.target.value };
     setForm(next);
     localStorage.setItem(FORM, JSON.stringify(next));
@@ -76,21 +78,21 @@ export default function Builder() {
       setError("");
       return `${system}\n\n---\n\nMY VIDEO:\n${user}`;
     } catch (e) {
-      setError(e.message);
+      setError(msg(e));
       return null;
     }
   }
 
-  async function generate(e) {
+  async function generate(e: FormEvent) {
     e.preventDefault();
     setError("");
     try {
       validateForm(form);
     } catch (err) {
-      return setError(err.message);
+      return setError(msg(err));
     }
     if (!serverKey && !key.trim()) {
-      settings.current.open = true;
+      if (settings.current) settings.current.open = true;
       return setError('Add your Gemini API key above, or use "Copy brief" to paste the request into any chatbot.');
     }
     setBusy(true);
@@ -106,13 +108,13 @@ export default function Builder() {
       setPlan(d.plan);
       requestAnimationFrame(() => result.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (err) {
-      setError(`Could not generate: ${err.message}`);
+      setError(`Could not generate: ${msg(err)}`);
     } finally {
       setBusy(false);
     }
   }
 
-  const select = (name, label) => (
+  const select = (name: keyof typeof FIELDS, label: string) => (
     <label className="field">
       <span>{label}</span>
       <select name={name} value={form[name]} onChange={set(name)}>
@@ -123,7 +125,7 @@ export default function Builder() {
     </label>
   );
 
-  const allText = plan?.steps
+  const allText = (plan?.steps ?? [])
     .map((s, i) => `STEP ${i + 1}: ${s.title} - ${s.tool}\n` + (s.prompts || []).map((x) => `\n[${x.label}]\n${x.text}`).join("\n"))
     .join("\n\n");
 
@@ -211,7 +213,7 @@ export default function Builder() {
                 <h3>Tool</h3>
                 <div className="models"><Model m={[s.tool, s.why]} /></div>
                 {s.prompts?.length > 0 && (<><h3>Prompts</h3>{s.prompts.map((x, j) => <PromptBlock key={j} label={x.label} text={x.text} />)}</>)}
-                {s.tips?.length > 0 && (<><h3>Tips</h3><List items={s.tips} className="tips" /></>)}
+                {s.tips && s.tips.length > 0 && (<><h3>Tips</h3><List items={s.tips} className="tips" /></>)}
               </section>
             ))}
           </>

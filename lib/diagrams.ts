@@ -1,24 +1,25 @@
 // Inline SVG diagrams. Keep this file ASCII-only.
-const S = (w, h, label, body) => `<svg class="dg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}">${body}</svg>`;
-const T = (x, y, s, c = "", a = "middle") => `<text x="${x}" y="${y}" class="${c}" text-anchor="${a}">${s}</text>`;
-const R = (x, y, w, h, c = "box", rx = 8) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" class="${c}"/>`;
-const L = (x1, y1, x2, y2, c = "ln") => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${c}"/>`;
-function A(x1, y1, x2, y2, c = "ln") {
-  const a = Math.atan2(y2 - y1, x2 - x1), p = d => `${x2 - 9 * Math.cos(a + d)},${y2 - 9 * Math.sin(a + d)}`;
+const S = (w: number, h: number, label: string, body: string) => `<svg class="dg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}">${body}</svg>`;
+const T = (x: number, y: number, s: string | number, c = "", a = "middle") => `<text x="${x}" y="${y}" class="${c}" text-anchor="${a}">${s}</text>`;
+const R = (x: number, y: number, w: number, h: number, c = "box", rx = 8) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" class="${c}"/>`;
+const L = (x1: number, y1: number, x2: number, y2: number, c = "ln") => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${c}"/>`;
+function A(x1: number, y1: number, x2: number, y2: number, c = "ln") {
+  const a = Math.atan2(y2 - y1, x2 - x1), p = (d: number) => `${x2 - 9 * Math.cos(a + d)},${y2 - 9 * Math.sin(a + d)}`;
   return L(x1, y1, x2, y2, c) + `<polygon points="${x2},${y2} ${p(0.45)} ${p(-0.45)}" class="${c}-h"/>`;
 }
-const B = (x, y, w, h, title, sub, c = "box") =>
+const B = (x: number, y: number, w: number, h: number, title: string, sub: string, c = "box") =>
   R(x, y, w, h, c) + T(x + w / 2, y + h / 2 - (sub ? 3 : -4), title, "t") + (sub ? T(x + w / 2, y + h / 2 + 14, sub, "m") : "");
-const badge = (x, y, n) => `<circle cx="${x}" cy="${y}" r="11" class="a"/>` + T(x, y + 4, n, "badge");
+const badge = (x: number, y: number, n: string | number) => `<circle cx="${x}" cy="${y}" r="11" class="a"/>` + T(x, y + 4, n, "badge");
 
 // Simple figure, origin at top of head, ~182 units tall. mode: front | back | erased
-function head(mode) {
+type Mode = "front" | "back" | "erased";
+function head(mode: Mode) {
   if (mode === "erased") return `<circle cx="0" cy="16" r="14" class="greybg erase"/>`;
   if (mode === "back") return `<circle cx="0" cy="16" r="14" class="hair"/>`;
   return `<circle cx="0" cy="16" r="14" class="skin"/><path d="M-14 15 A14 14 0 0 1 14 15 Q0 7 -14 15Z" class="hair"/>` +
     `<circle cx="-5" cy="17" r="1.6" class="eye"/><circle cx="5" cy="17" r="1.6" class="eye"/><path d="M-4 23 Q0 25 4 23" class="mouth"/>`;
 }
-const person = (cx, y0, s, mode = "front") =>
+const person = (cx: number, y0: number, s: number, mode: Mode = "front") =>
   `<g transform="translate(${cx} ${y0}) scale(${s})"><rect x="-4" y="28" width="8" height="6" class="skin"/>` +
   `<rect x="-34" y="34" width="11" height="62" rx="5" class="cloth"/><rect x="23" y="34" width="11" height="62" rx="5" class="cloth"/>` +
   `<rect x="-22" y="32" width="44" height="72" rx="8" class="cloth"/>` +
@@ -95,8 +96,8 @@ export const DIAGRAMS = {
   shotSizes: S(640, 400, "Shot sizes", (() => {
     const fr = [
       ["#f78fb3", 20, 20, 600, 372], ["#5fd38d", 175, 44, 170, 322], ["#c792ea", 195, 50, 130, 176], ["#7cc4ff", 215, 56, 90, 78], ["#f5c451", 236, 74, 48, 18],
-    ];
-    const lab = [[1, 304, "Full shot", "Body language, movement"], [2, 194, "Medium shot", "Dialogue, conversation"], [3, 126, "Close-up", "Emotion, detail"], [4, 83, "Extreme close-up", "Tension, tiny details"]];
+    ] as const;
+    const lab = [[1, 304, "Full shot", "Body language, movement"], [2, 194, "Medium shot", "Dialogue, conversation"], [3, 126, "Close-up", "Emotion, detail"], [4, 83, "Extreme close-up", "Tension, tiny details"]] as const;
     return `<path d="M20 351 L60 300 L95 330 L135 285 L170 340" class="ln"/><circle cx="560" cy="64" r="14" class="sun"/>` + L(20, 351, 620, 351) +
       person(260, 60, 1.6) +
       fr.map(([c, x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" class="frame" style="stroke:${c}"/>`).join("") +
@@ -108,14 +109,14 @@ export const DIAGRAMS = {
   })()),
 
   cameraAngles: S(760, 370, "Camera angles", (() => {
-    const cam = (x, y, deg) => `<g transform="translate(${x} ${y}) rotate(${deg})"><rect x="-14" y="-9" width="20" height="18" rx="3" class="cam"/><polygon points="6,-5 16,-10 16,10 6,5" class="a"/></g>`;
+    const cam = (x: number, y: number, deg: number) => `<g transform="translate(${x} ${y}) rotate(${deg})"><rect x="-14" y="-9" width="20" height="18" rx="3" class="cam"/><polygon points="6,-5 16,-10 16,10 6,5" class="a"/></g>`;
     const cams = [
       [500, 24, 500, 76, "Bird's-eye", "Overview, scale", 524, 22, "start"],
       [330, 46, 480, 110, "High angle", "Subject feels small", 308, 44, "end"],
       [300, 102, 476, 102, "Eye level", "Neutral, direct connection", 278, 100, "end"],
       [330, 270, 480, 170, "Low angle", "Powerful, heroic", 308, 270, "end"],
       [420, 330, 488, 130, "Worm's-eye", "Larger than life", 398, 336, "end"],
-    ];
+    ] as const;
     return L(440, 335, 580, 335) + person(500, 80, 1.4) +
       cams.map(([x, y, tx, ty, t, s, lx, ly, a]) => L(x, y, tx, ty, "sight") + cam(x, y, Math.atan2(ty - y, tx - x) * 180 / Math.PI) + T(lx, ly, t, "t", a) + T(lx, ly + 15, s, "m", a)).join("") +
       `<g transform="translate(675 210) rotate(-12)"><rect x="-58" y="-62" width="116" height="110" rx="4" class="frame" style="stroke:#9aa0ab"/>${person(0, -54, 0.55)}</g>` +
@@ -123,7 +124,7 @@ export const DIAGRAMS = {
   })()),
 
   ugcTimeline: S(640, 200, "UGC script timeline", [
-    ...[[0, 2, "Hook", "a"], [2, 6, "Problem", "box"], [6, 15, "Demo / proof", "box"], [15, 20, "CTA", "box"]].map(([s, e, t, c]) => {
+    ...([[0, 2, "Hook", "a"], [2, 6, "Problem", "box"], [6, 15, "Demo / proof", "box"], [15, 20, "CTA", "box"]] as const).map(([s, e, t, c]) => {
       const x = 20 + s * 30, w = (e - s) * 30;
       return R(x + 1, 90, w - 2, 36, c, 6) + T(x + w / 2, 113, t, c === "a" ? "t dark" : "t");
     }),
@@ -148,3 +149,5 @@ export const DIAGRAMS = {
     A(486, 124, 516, 124), R(520, 16, 108, 192, "box hi", 6), T(574, 104, "1080 x 1920", "t"), T(574, 122, "30 FPS", "m"), T(574, 138, "Instagram-ready", "m"),
   ].join("")),
 };
+
+export type DiagramName = keyof typeof DIAGRAMS;

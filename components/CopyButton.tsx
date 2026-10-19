@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 // `text` may be a function so callers can validate/compute lazily; returning null cancels the copy.
-export default function CopyButton({ text, className = "copy", children = "Copy", doneLabel = "Copied" }) {
+type Props = { text: string | (() => string | null); className?: string; children?: ReactNode; doneLabel?: ReactNode };
+
+export default function CopyButton({ text, className = "copy", children = "Copy", doneLabel = "Copied" }: Props) {
   const [done, setDone] = useState(false);
   async function copy() {
     const value = typeof text === "function" ? text() : text;

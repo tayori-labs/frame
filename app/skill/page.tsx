@@ -2,7 +2,7 @@ import { PromptBlock, StepHead } from "@/components/ui";
 
 export const metadata = { title: "Agent skill" };
 
-const REPO = "https://github.com/tayori-labs/frame/tree/main/skills/video-prompt-director";
+const REPO = "https://github.com/tayori-labs/frame/tree/main/.agents/skills/video-prompt-director";
 const FLOW = ["Asks only for missing details", "Picks the matching workflow", "Splits into 15s generations", "Writes every prompt in full", "Checks against a checklist"];
 const TREE = [
   ["video-prompt-director/", ""],
@@ -54,13 +54,23 @@ export default function Skill() {
 
       <h2>Install</h2>
       <section className="step">
-        <StepHead n={1} title="Claude Code" />
+        <StepHead n={1} title="One command (recommended)" />
+        <p className="tips">
+          Installs straight from the GitHub repo into Claude Code, Cursor, Codex and other agents that support Agent Skills. It asks which agents to install for and
+          whether to install globally or for the current project.
+        </p>
+        <PromptBlock label="Install" text="npx skills add tayori-labs/frame" />
+        <PromptBlock label="Install globally, no prompts" text="npx skills add tayori-labs/frame -g -y" />
+        <p className="tips">Prefer doing it by hand? Download the zip above and follow the steps for your tool below.</p>
+      </section>
+      <section className="step">
+        <StepHead n={2} title="Claude Code" />
         <p className="tips">Unzip into your personal skills folder (all projects) or a project&apos;s <code>.claude/skills</code> folder, then start a new session.</p>
         <PromptBlock label="Personal (all projects)" text="unzip video-prompt-director.zip -d ~/.claude/skills/" />
         <PromptBlock label="This project only" text="unzip video-prompt-director.zip -d .claude/skills/" />
       </section>
       <section className="step">
-        <StepHead n={2} title="Claude app (web & desktop)" />
+        <StepHead n={3} title="Claude app (web & desktop)" />
         <ul className="tips">
           <li>Open <b>Settings, Capabilities</b> and make sure code execution / Skills is turned on.</li>
           <li>In the Skills section choose <b>Upload skill</b> and select <code>video-prompt-director.zip</code>.</li>
@@ -68,20 +78,20 @@ export default function Skill() {
         </ul>
       </section>
       <section className="step">
-        <StepHead n={3} title="Cursor" />
+        <StepHead n={4} title="Cursor" />
         <p className="tips">Unzip into your personal or project skills folder, then open a new chat.</p>
         <PromptBlock label="Personal (all projects)" text="unzip video-prompt-director.zip -d ~/.cursor/skills/" />
         <PromptBlock label="This project only" text="unzip video-prompt-director.zip -d .cursor/skills/" />
       </section>
       <section className="step">
-        <StepHead n={4} title="Other agents" />
+        <StepHead n={5} title="Other agents" />
         <p className="tips">
           Any tool that supports the Agent Skills format (a folder with a <code>SKILL.md</code>) works: copy the <code>video-prompt-director</code> folder into that
           tool&apos;s skills directory (many use <code>~/.agents/skills/</code>). Check the tool&apos;s docs for the exact path.
         </p>
       </section>
       <section className="step">
-        <StepHead n={5} title="ChatGPT or Gemini (no skill support)" />
+        <StepHead n={6} title="ChatGPT or Gemini (no skill support)" />
         <ul className="tips">
           <li>Create a Custom GPT, Gem or Project.</li>
           <li>Paste the contents of <a className="inline" href={`${REPO}/SKILL.md`} target="_blank" rel="noopener">SKILL.md</a> into its instructions.</li>
@@ -103,7 +113,7 @@ export default function Skill() {
       </ul>
 
       <h2>Keeping it in sync</h2>
-      <p className="tips">The reference files are generated from this site&apos;s <code>lib/data.js</code>. After editing it, rebuild the skill and the zip:</p>
+      <p className="tips">The reference files are generated from this site&apos;s <code>lib/data.ts</code>. After editing it, rebuild the skill and the zip:</p>
       <PromptBlock label="Rebuild" text="pnpm build:skill" />
     </>
   );

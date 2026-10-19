@@ -1,17 +1,20 @@
-// Regenerates the skill's reference files from lib/data.js and zips the skill.
-// Usage: node skills/build.js
-const fs = require("fs"), path = require("path"), vm = require("vm"), { execFileSync } = require("child_process");
+// Regenerates the skill's reference files from lib/data.ts and zips the skill.
+// Usage: pnpm build:skill
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { DATA, type Pair } from "../lib/data.ts";
 
-const root = path.join(__dirname, "..");
-const DATA = vm.runInNewContext(fs.readFileSync(path.join(root, "lib", "data.js"), "utf8").replace(/^export /m, "") + "\n;DATA");
-const skill = path.join(__dirname, "video-prompt-director");
-const out = (name, text) => fs.writeFileSync(path.join(skill, "references", name), text.trim() + "\n");
+const root = path.join(import.meta.dirname, "..");
+const skills = path.join(root, ".agents", "skills");
+const skill = path.join(skills, "video-prompt-director");
+const out = (name: string, text: string) => fs.writeFileSync(path.join(skill, "references", name), text.trim() + "\n");
 fs.mkdirSync(path.join(skill, "references"), { recursive: true });
 
-const fence = t => "```\n" + t + "\n```";
-const table = (heads, rows) =>
+const fence = (t: string) => "```\n" + t + "\n```";
+const table = (heads: string[], rows: string[][]) =>
   [`| ${heads.join(" | ")} |`, `| ${heads.map(() => "---").join(" | ")} |`, ...rows.map(r => `| ${r.map(c => String(c).replace(/\|/g, "/")).join(" | ")} |`)].join("\n");
-const tools = xs => xs.map(([n, w]) => `${n} (${w})`).join("; ");
+const tools = (xs: Pair[]) => xs.map(([n, w]) => `${n} (${w})`).join("; ");
 
 out("workflows.md", `# Workflows by video type
 
@@ -52,7 +55,7 @@ out("vocabulary.md", `# Prompt vocabulary
 
 Prompt order: ${Object.values(P).map(([n]) => n.toLowerCase()).join(" -> ")}.
 
-${[["Camera body", v.camera], ["Lens", v.lens], ["Director / DP style", v.director], ["Lighting", v.lighting], ["Shot size", v.shots], ["Camera angle", v.angles], ["Camera movement", v.moves]]
+${([["Camera body", v.camera], ["Lens", v.lens], ["Director / DP style", v.director], ["Lighting", v.lighting], ["Shot size", v.shots], ["Camera angle", v.angles], ["Camera movement", v.moves]] as [string, Pair[]][])
     .map(([h, rows]) => `## ${h}\n${table(["Term", "Effect"], rows)}`).join("\n\n")}
 
 ## Annotated examples
@@ -81,5 +84,5 @@ ${t.notes.map(n => `- ${n}`).join("\n")}`);
 
 const zip = path.join(root, "public", "video-prompt-director.zip");
 fs.rmSync(zip, { force: true });
-execFileSync("zip", ["-rq", zip, "video-prompt-director", "-x", "*.DS_Store"], { cwd: __dirname });
+execFileSync("zip", ["-rq", zip, "video-prompt-director", "-x", "*.DS_Store"], { cwd: skills });
 console.log("Built references and", path.relative(root, zip));
