@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DATA } from "@/lib/data";
 import { Diagram, List, Model, PromptBlock, StepHead } from "@/components/ui";
@@ -16,6 +17,8 @@ export async function generateMetadata({ params }: Props) {
 export default async function Workflow({ params }: Props) {
   const c = find((await params).id);
   if (!c) notFound();
+  const n = DATA.categories[DATA.categories.indexOf(c) + 1];
+  const next = n ? { href: `/workflows/${n.id}`, name: n.name, text: n.tagline } : { href: "/models", name: "Model directory", text: "Match the model to the task, with per-second costs." };
   return (
     <>
       <h1>{c.name}</h1>
@@ -34,6 +37,11 @@ export default async function Workflow({ params }: Props) {
           {s.prompts.length > 0 && (<><h3>Prompts</h3>{s.prompts.map((p) => <PromptBlock key={p.label} label={p.label} text={p.text} />)}</>)}
         </section>
       ))}
+      <Link className="card read-next" href={next.href}>
+        <small>Read next</small>
+        <b>{next.name} {"\u2192"}</b>
+        <span>{next.text}</span>
+      </Link>
     </>
   );
 }

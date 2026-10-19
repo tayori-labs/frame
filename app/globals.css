@@ -480,3 +480,5 @@ button.term.done { color: #5fd38d; }
 .site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
 .site-footer a { color: var(--muted); }
 .site-footer a:hover { color: var(--accent); }
+.read-next { margin-top: 48px; }
+.read-next small { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.72rem; font-weight: 600; }
